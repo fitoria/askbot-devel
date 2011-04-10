@@ -861,15 +861,31 @@ def user_post_comment(
     )
     return comment
 
-def user_mark_tags(self, tagnames, wildcards, reason = None, action = None):
-    """subscribe for or ignore a list of tags"""
+def user_mark_tags(
+            self,
+            tagnames = None,
+            wildcards = None,
+            reason = None,
+            action = None
+        ):
+    """subscribe for or ignore a list of tags
+
+    * ``tagnames`` and ``wildcards`` are lists of 
+      pure tags and wildcard tags, respectively
+    * ``reason`` - either "good" or "bad"
+    * ``action`` - eitrer "add" or "remove"
+    """
     cleaned_wildcards = list()
+    assert(reason in ('good', 'bad'))
+    assert(action in ('add', 'remove'))
     if wildcards:
         cleaned_wildcards = self.update_wildcard_tag_selections(
             action = action,
             reason = reason,
             wildcards = wildcards
         )
+    if tagnames is None:
+        tagnames = list()
 
     #below we update normal tag selections
     marked_ts = MarkedTag.objects.filter(
@@ -2010,8 +2026,8 @@ def send_instant_notifications_about_activity_in_post(
     if update_activity.activity_type not in acceptable_types:
         return
 
-    from askbot.skins.loaders import ENV
-    template = ENV.get_template('instant_notification.html')
+    from askbot.skins.loaders import get_template
+    template = get_template('instant_notification.html')
 
     update_type_map = const.RESPONSE_ACTIVITY_TYPE_MAP_FOR_TEMPLATES
     update_type = update_type_map[update_activity.activity_type]
@@ -2062,9 +2078,9 @@ def record_post_update_activity(
     if newly_mentioned_users is None:
         newly_mentioned_users = list()
 
-    from askbot.tasks import record_post_update_task
+    from askbot import tasks
 
-    record_post_update_task.delay(
+    tasks.record_post_update_celery_task.delay(
         post_id = post.id,
         post_content_type_id = ContentType.objects.get_for_model(post).id,
         newly_mentioned_user_id_list = [u.id for u in newly_mentioned_users],
@@ -2072,6 +2088,14 @@ def record_post_update_activity(
         timestamp = timestamp,
         created = created,
     )
+    #non-celery version
+    #tasks.record_post_update(
+    #    post = post,
+    #    newly_mentioned_users = newly_mentioned_users,
+    #    updated_by = updated_by,
+    #    timestamp = timestamp,
+    #    created = created,
+    #)
 
 
 def record_award_event(instance, created, **kwargs):

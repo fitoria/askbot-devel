@@ -3,9 +3,20 @@ from django.db import connection, transaction
 from django.contrib.auth.models import User
 from django.utils.translation import ugettext as _
 from askbot.models.base import DeletableContent
+from askbot.models.base import BaseQuerySetManager
 
+def tags_match_some_wildcard(tag_names, wildcard_tags):
+    """Same as 
+    :meth:`~askbot.models.tag.TagQuerySet.tags_match_some_wildcard`
+    except it works on tag name strings
+    """
+    for tag_name in tag_names:
+        for wildcard_tag in sorted(wildcard_tags):
+            if tag_name.startswith(wildcard_tag[:-1]):
+                return True
+    return False
 
-class TagManager(models.Manager):
+class TagQuerySet(models.query.QuerySet):
     UPDATE_USED_COUNTS_QUERY = """
         UPDATE tag 
         SET used_count = (
@@ -29,6 +40,20 @@ class TagManager(models.Manager):
         cursor.execute(query, [tag.id for tag in tags])
 
         transaction.commit_unless_managed() 
+
+    def tags_match_some_wildcard(self, wildcard_tags = None):
+        """True if any one of the tags in the query set
+        matches a wildcard
+
+        :arg:`wildcard_tags` is an iterable of wildcard tag strings
+
+        todo: refactor to use :func:`tags_match_some_wildcard`
+        """
+        for tag in self.all():
+            for wildcard_tag in sorted(wildcard_tags):
+                if tag.name.startswith(wildcard_tag[:-1]):
+                    return True
+        return False
 
     def get_by_wildcards(self, wildcards = None):
         """returns query set of tags that match the wildcard tags
@@ -85,6 +110,14 @@ class TagManager(models.Manager):
                 tag.local_used_count = tag.used_count
 
         return tags
+
+
+class TagManager(BaseQuerySetManager):
+    """chainable custom filter query set manager
+    for :class:``~askbot.models.Tag`` objects
+    """
+    def get_query_set(self):
+        return TagQuerySet(self.model)
 
 class Tag(DeletableContent):
     name            = models.CharField(max_length=255, unique=True)
