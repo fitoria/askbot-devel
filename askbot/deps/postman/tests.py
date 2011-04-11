@@ -182,11 +182,33 @@ class BaseTest(TestCase):
         except KeyError: # happens once at the setUp
             pass
         reload(get_resolver(get_urlconf()).urlconf_module)
+
+    def assertTemplateUsed(self, response, template_name, msg_prefix=''):
+        """
+        Overloading original method to make it work with jinja2
+        """
+        if settings.POSTMAN_TEMPLATES == 'jinja2':
+            if isinstance(r.template, coffin.template.Template):
+                self.assertEqual(r.template.name, template)
+            else:
+                #asuming that there is more than one template
+                template_names = ','.join([t.name for t in r.template])
+                self.assertEqual(r.template[0].name, template, msg_prefix + "Template %s was not used" % template)
+        else:
+            super(BaseTest, self).assertTemplateUsed(response, template_name, msg_prefix)
+
+    def assertRedirects(self, response, expected_url):
+        self.assertEqual(response._headers['location'], ('Location', 'http://testserver' + expected_url))
+        self.assertEqual(response.status_code, 302)
+        
+    def assertQuerysetEqual(self, qs, values, transform=repr):
+        return self.assertEqual(map(transform, qs), values)
     
 class ViewTest(BaseTest):
     """
     Test the views.
     """
+    #not workee
     def test_home(self):
         response = self.client.get('/messages/')
         self.assertRedirects(response, reverse('postman_inbox'), status_code=301, target_status_code=302)
@@ -198,7 +220,7 @@ class ViewTest(BaseTest):
         response = self.client.get(url)
         self.assertRedirects(response, "{0}?{1}={2}".format(settings.LOGIN_URL, REDIRECT_FIELD_NAME, url))
         # authenticated
-        self.assert_(self.client.login(username='foo', password='pass'))
+        self.assert_(self.client.login(username='foo', password='pass', method='password', provider_name='local'))
         response = self.client.get(url)
         self.assertTemplateUsed(response, template)
         url = reverse('postman_' + folder)
@@ -806,6 +828,7 @@ class FieldTest(BaseTest):
     """
     Test the CommaSeparatedUserField.
     """
+    #works
     def test_label(self):
         "Test the plural/singular of the label."
         f = CommaSeparatedUserField(label=('plural','singular'))
@@ -880,6 +903,7 @@ class MessageManagerTest(BaseTest):
     """
     Test the Message manager.
     """
+    #works
     def test_num_queries(self):
         "Test the number of queries."
         # not available in django v1.2.3
@@ -1040,6 +1064,7 @@ class MessageTest(BaseTest):
     """
     Test the Message model.
     """
+    #works
     def check_parties(self, m, s=None, r=None, email=''):
         "Check party related properties."
         obfuscated_email_re = re.compile('^[0-9a-f]{4}..[0-9a-f]{4}@domain$')
@@ -1424,6 +1449,7 @@ class PendingMessageManagerTest(BaseTest):
     """
     Test the PendingMessage manager.
     """
+    #works
     def test(self):
         msg1 = self.create()
         msg2 = self.create(moderation_status=STATUS_REJECTED)
@@ -1435,6 +1461,7 @@ class PendingMessageTest(BaseTest):
     """
     Test the PendingMessage model.
     """
+    #works
     def test(self):
         m = PendingMessage()
         self.assert_(m.is_pending())
@@ -1449,6 +1476,7 @@ class FiltersTest(BaseTest):
     """
     Test the filters.
     """
+    #works
     def check_sub(self, x, y, value):
         t = Template("{% load postman_tags %}{% with "+x+"|sub:"+y+" as var %}{{ var }}{% endwith %}")
         self.assertEqual(t.render(Context({})), value)
@@ -1491,6 +1519,7 @@ class TagsTest(BaseTest):
     """
     Test the template tags.
     """
+    #works
     def check_postman_unread(self, value, user=None, asvar=''):
         t = Template("{% load postman_tags %}{% postman_unread " + asvar +" %}")
         ctx = Context({'user': user} if user else {})
@@ -1533,6 +1562,7 @@ class UtilsTest(BaseTest):
     """
     Test helper functions.
     """
+    #works 
     def test_format_body(self):
         "Test format_body()."
         header = "\n\nfoo wrote:\n"

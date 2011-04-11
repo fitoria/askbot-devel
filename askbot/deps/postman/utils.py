@@ -92,3 +92,8 @@ def notify_user(object, action):
     else:
         if user.email and user.is_active:
             email('postman/email_user_subject.txt', 'postman/email_user.txt', [user.email], object, action)
+
+def django_version():
+    '''Returns django version'''
+    import django
+    return django.VERSION

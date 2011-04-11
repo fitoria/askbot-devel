@@ -12,6 +12,7 @@ except:
 
 from django.forms.fields import CharField
 from django.utils.translation import ugettext_lazy as _
+from postman.utils import django_version
 
 class BasicCommaSeparatedUserField(CharField):
     """
@@ -30,7 +31,7 @@ class BasicCommaSeparatedUserField(CharField):
         'filtered_user': _("{user.username}"),
         'filtered_user_with_reason': _("{user.username} ({reason})"),
     }
-
+    
     def __init__(self, max=None, min=None, user_filter=None, *args, **kwargs):
         self.max, self.min, self.user_filter = max, min, user_filter
         label = kwargs.get('label')
@@ -48,14 +49,17 @@ class BasicCommaSeparatedUserField(CharField):
 
     def to_python(self, value):
         """Normalize data to an unordered list of distinct, non empty, whitespace-stripped strings."""
-        value = super(BasicCommaSeparatedUserField, self).to_python(value)
+        #FIXME: does not work with django < 1.2
+        #value = super(BasicCommaSeparatedUserField, self).to_python(value)
         if value in EMPTY_VALUES: # Return an empty list if no useful input was given.
             return []
         return list(set([name.strip() for name in value.split(',') if name and not name.isspace()]))
 
     def validate(self, value):
         """Check the limits."""
-        super(BasicCommaSeparatedUserField, self).validate(value)
+        if django_version() >= (1, 3):
+            super(BasicCommaSeparatedUserField, self).validate(value)
+
         if value in EMPTY_VALUES:
             return
         count = len(value)
@@ -66,13 +70,19 @@ class BasicCommaSeparatedUserField(CharField):
 
     def clean(self, value):
         """Check names are valid and filter them."""
+
         names = super(BasicCommaSeparatedUserField, self).clean(value)
         if not names:
-            return []
-        names = names.replace(' ', '').split(',')
+            return [] 
+        names = names.replace(' ', '').split(',') 
         users = list(User.objects.filter(is_active=True, username__in=names))
         unknown_names = set(names) ^ set([u.username for u in users])
         errors = []
+        
+        #added to pass tests
+        if django_version() < (1, 3):
+            self.validate(names)
+
         if unknown_names:
             errors.append(self.error_messages['unknown'].format(users=', '.join(unknown_names)))
         if self.user_filter:
