@@ -36,6 +36,7 @@ from datetime import datetime, timedelta
 import re
 import sys
 from time import sleep
+from urlparse import urlsplit, urlunsplit
 
 from django.conf import settings
 from django.contrib.auth import REDIRECT_FIELD_NAME
@@ -47,6 +48,7 @@ from django.db.models import Q
 from django.http import QueryDict
 from django.template import Template, Context, TemplateSyntaxError, TemplateDoesNotExist
 from django.test import TestCase
+from django.test.client import Client
 
 from postman.fields import CommaSeparatedUserField
 # because of reload()'s, do "from postman.forms import xxForm" just before needs
@@ -99,6 +101,7 @@ class BaseTest(TestCase):
         self.user2 = User.objects.create_user('bar', 'bar@domain.com', 'pass')
         self.user3 = User.objects.create_user('baz', 'baz@domain.com', 'pass')
         self.email = 'qux@domain.com'
+        self.client = Client()
 
     def check_now(self, dt):
         "Check that a date is now. Well... almost."
@@ -197,9 +200,63 @@ class BaseTest(TestCase):
         else:
             super(BaseTest, self).assertTemplateUsed(response, template_name, msg_prefix)
 
-    def assertRedirects(self, response, expected_url):
-        self.assertEqual(response._headers['location'], ('Location', 'http://testserver' + expected_url))
-        self.assertEqual(response.status_code, 302)
+    def assertRedirects(self, response, expected_url, status_code=302,
+                        target_status_code=200, host=None, msg_prefix=''):
+        """Asserts that a response redirected to a specific URL, and that the
+        redirect URL can be loaded.
+
+        Note that assertRedirects won't work for external links since it uses
+        TestClient to do a request.
+        """
+        if msg_prefix:
+            msg_prefix += ": "
+
+        if hasattr(response, 'redirect_chain'):
+            # The request was a followed redirect
+            self.assertTrue(len(response.redirect_chain) > 0,
+                msg_prefix + "Response didn't redirect as expected: Response"
+                " code was %d (expected %d)" %
+                    (response.status_code, status_code))
+
+            self.assertEqual(response.redirect_chain[0][1], status_code,
+                msg_prefix + "Initial response didn't redirect as expected:"
+                " Response code was %d (expected %d)" %
+                    (response.redirect_chain[0][1], status_code))
+
+            url, status_code = response.redirect_chain[-1]
+
+            self.assertEqual(response.status_code, target_status_code,
+                msg_prefix + "Response didn't redirect as expected: Final"
+                " Response code was %d (expected %d)" %
+                    (response.status_code, target_status_code))
+
+        else:
+            # Not a followed redirect
+            self.assertEqual(response.status_code, status_code,
+                msg_prefix + "Response didn't redirect as expected: Response"
+                " code was %d (expected %d)" %
+                    (response.status_code, status_code))
+
+            url = response['Location']
+            scheme, netloc, path, query, fragment = urlsplit(url)
+
+            redirect_response = response.client.get(path, QueryDict(query))
+
+            # Get the redirection page, using the same client that was used
+            # to obtain the original response.
+            self.assertEqual(redirect_response.status_code, target_status_code,
+                msg_prefix + "Couldn't retrieve redirection page '%s':"
+                " response code was %d (expected %d)" %
+                    (path, redirect_response.status_code, target_status_code))
+
+        e_scheme, e_netloc, e_path, e_query, e_fragment = urlsplit(expected_url)
+        if not (e_scheme or e_netloc):
+            expected_url = urlunsplit(('http', host or 'testserver', e_path,
+                e_query, e_fragment))
+
+        self.assertEqual(url, expected_url,
+            msg_prefix + "Response redirected to '%s', expected '%s'" %
+                (url, expected_url))
         
     def assertQuerysetEqual(self, qs, values, transform=repr):
         return self.assertEqual(map(transform, qs), values)
@@ -241,7 +298,7 @@ class ViewTest(BaseTest):
 
     def check_template(self, action, args):
         # don't want to bother with additional templates; test only the parameter passing
-        url = reverse('postman_' + action + '_template', args=args)
+        url = reverse('postman_' + action, args=args)
         self.assertRaises(TemplateDoesNotExist, self.client.get, url)
 
     def test_template(self):
@@ -250,7 +307,7 @@ class ViewTest(BaseTest):
         m1.read_at, m1.thread = datetime.now(), m1
         m2 = self.c21(parent=m1, thread=m1.thread)
         m1.replied_at = m2.sent_at; m1.save()
-        self.assert_(self.client.login(username='foo', password='pass'))
+        self.assert_(self.client.login(username='foo', password='pass', method='password', provider_name='local'))
         for actions, args in [
             (('inbox', 'sent', 'archives', 'trash', 'write'), []),
             (('view', 'view_conversation'), [m1.pk]),
