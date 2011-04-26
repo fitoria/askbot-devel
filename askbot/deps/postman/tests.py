@@ -48,7 +48,6 @@ from django.db.models import Q
 from django.http import QueryDict
 from django.template import Template, Context, TemplateSyntaxError, TemplateDoesNotExist
 from django.test import TestCase
-from django.test.client import Client
 
 from postman.fields import CommaSeparatedUserField
 # because of reload()'s, do "from postman.forms import xxForm" just before needs
@@ -101,7 +100,6 @@ class BaseTest(TestCase):
         self.user2 = User.objects.create_user('bar', 'bar@domain.com', 'pass')
         self.user3 = User.objects.create_user('baz', 'baz@domain.com', 'pass')
         self.email = 'qux@domain.com'
-        self.client = Client()
 
     def check_now(self, dt):
         "Check that a date is now. Well... almost."
