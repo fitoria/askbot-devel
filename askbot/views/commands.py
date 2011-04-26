@@ -12,6 +12,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseRedirect
 from django.forms import ValidationError
 from django.shortcuts import get_object_or_404
+from django.views.decorators import csrf
 from django.utils import simplejson
 from django.utils.translation import ugettext as _
 from askbot import models
@@ -98,35 +99,21 @@ def manage_inbox(request):
                                     activity__activity_type__in = activity_types,
                                     user = user
                                 )
+
                     action_type = post_data['action_type']
-                    seen_memos = memo_set.filter(
-                                    status=models.ActivityAuditStatus.STATUS_SEEN
-                                )
-                    new_memos = memo_set.filter(
-                                    status=models.ActivityAuditStatus.STATUS_NEW
-                                )
                     if action_type == 'delete':
-                        user.new_response_count -= new_memos.count()
-                        user.seen_response_count -= seen_memos.count()
-                        user.clean_response_counts()
-                        user.save()
                         memo_set.delete()
                     elif action_type == 'mark_new':
-                        user.new_response_count += seen_memos.count()
-                        user.seen_response_count -= seen_memos.count()
-                        user.clean_response_counts()
-                        user.save()
                         memo_set.update(status = models.ActivityAuditStatus.STATUS_NEW)
                     elif action_type == 'mark_seen':
-                        user.new_response_count -= new_memos.count()
-                        user.seen_response_count += new_memos.count()
-                        user.clean_response_counts()
-                        user.save()
                         memo_set.update(status = models.ActivityAuditStatus.STATUS_SEEN)
                     else:
                         raise exceptions.PermissionDenied(
                                     _('Oops, apologies - there was some error')
                                 )
+
+                    user.update_response_counts()
+
                     response_data['success'] = True
                     data = simplejson.dumps(response_data)
                     return HttpResponse(data, mimetype="application/json")
@@ -391,6 +378,7 @@ def get_tag_list(request):
     output = '\n'.join(tag_names)
     return HttpResponse(output, mimetype = "text/plain")
 
+@csrf.csrf_protect
 def subscribe_for_tags(request):
     """process subscription of users by tags"""
     #todo - use special separator to split tags
@@ -471,6 +459,7 @@ def set_tag_filter_strategy(request):
 
 
 @login_required
+@csrf.csrf_protect
 def close(request, id):#close question
     """view to initiate and process 
     question close
@@ -500,6 +489,7 @@ def close(request, id):#close question
         return HttpResponseRedirect(question.get_absolute_url())
 
 @login_required
+@csrf.csrf_protect
 def reopen(request, id):#re-open question
     """view to initiate and process 
     question close

@@ -11,10 +11,13 @@ Programming
 * Mike Chen & Sailing Cai - original authors of CNPROG forum
 * Evgeny Fadeev - founder of askbot
 * Benoit Lavine (with Windriver Software, Inc.)
-* Adolfo Fitoria
+* Alex Robbins (celery support)
+* `Adolfo Fitoria <http://fitoria.net>`_
 * Andrei Mamoutkine
 * Ramiro Morales (with Machinalis)
 * Andy Knotts
+* `Gael Pasgrimaud <http://www.gawel.org/>`_ (bearstech)
+* Jeff Madynski
 
 Translations
 ------------

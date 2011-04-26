@@ -139,6 +139,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     #'django.core.context_processors.i18n',
     'askbot.user_messages.context_processors.user_messages',#must be before auth
     'django.core.context_processors.auth', #this is required for admin
+    'django.core.context_processors.csrf', #necessary for csrf protection
 )
 
 
@@ -211,3 +212,6 @@ CELERY_ALWAYS_EAGER = True
 
 import djcelery
 djcelery.setup_loader()
+
+CSRF_COOKIE_NAME = 'askbot_scrf'
+CSRF_COOKIE_DOMAIN = ''#enter domain name here - e.g. example.com

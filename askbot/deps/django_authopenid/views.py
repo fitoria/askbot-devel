@@ -40,6 +40,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate
 from django.core.urlresolvers import reverse
+from django.views.decorators import csrf
 from django.utils.encoding import smart_unicode
 from django.utils.html import escape
 from django.utils.translation import ugettext as _
@@ -258,6 +259,7 @@ def complete_oauth_signin(request):
         return HttpResponseRedirect(next_url)
 
 #@not_authenticated
+@csrf.csrf_protect
 def signin(
         request,
         newquestion = False,#todo: not needed
@@ -317,6 +319,8 @@ def signin(
                                     login_provider_name = ldap_provider_name,
                                     redirect_url = next_url
                                 )
+                    else:
+                        login_form.set_password_login_error() 
                 else:
                     if password_action == 'login':
                         user = authenticate(
@@ -445,6 +449,7 @@ def signin(
                         view_subtype = view_subtype
                     )
 
+@csrf.csrf_protect
 def show_signin_view(
                 request,
                 login_form = None,
@@ -616,7 +621,7 @@ def signin_success(request, identity_url, openid_response):
     provider_name = util.get_provider_name(openid_url)
 
     request.session['email'] = openid_data.sreg.get('email', '')
-    request.session['username'] = openid_data.sreg.get('username', '')
+    request.session['username'] = openid_data.sreg.get('nickname', '')
 
     return finalize_generic_signin(
                         request = request,
@@ -688,6 +693,7 @@ def finalize_generic_signin(
             return HttpResponseRedirect(redirect_url)
 
 @not_authenticated
+@csrf.csrf_protect
 def register(request, login_provider_name=None, user_identifier=None):
     """
     this function is used via it's own url with request.method=POST
@@ -831,6 +837,7 @@ def signin_failure(request, message):
 
 @not_authenticated
 @decorators.valid_password_login_provider_required
+@csrf.csrf_protect
 def signup_with_password(request):
     """Create a password-protected account
     template: authopenid/signup_with_password.html
@@ -1022,6 +1029,7 @@ def send_new_email_key(user,nomessage=False):
         set_email_validation_message(user)
 
 @login_required
+@csrf.csrf_protect
 def send_email_key(request):
     """
     url = /email/sendkey/

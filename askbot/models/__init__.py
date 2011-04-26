@@ -876,8 +876,9 @@ def user_mark_tags(
     * ``action`` - eitrer "add" or "remove"
     """
     cleaned_wildcards = list()
-    assert(reason in ('good', 'bad'))
     assert(action in ('add', 'remove'))
+    if action == 'add':
+        assert(reason in ('good', 'bad'))
     if wildcards:
         cleaned_wildcards = self.update_wildcard_tag_selections(
             action = action,
@@ -1296,8 +1297,7 @@ def user_visit_question(self, question = None, timestamp = None):
                                 status=ActivityAuditStatus.STATUS_SEEN
                             )
     if cleared_record_count > 0:
-        self.decrement_response_count(cleared_record_count)
-        self.save()
+        self.update_response_counts()
 
     #finally, mark admin memo objects if applicable
     #the admin response counts are not denormalized b/c they are easy to obtain
@@ -1491,6 +1491,45 @@ def user_get_q_sel_email_feed_frequency(self):
     except Exception, e:
         raise e
     return feed_setting.frequency
+
+def user_get_tag_filtered_questions(self, questions = None):
+    """Returns a query set of questions, tag filtered according
+    to the user choices. Parameter ``questions`` can be either ``None``
+    or a starting query set.
+    """
+    if questions == None:
+        questions = Question.objects.all()
+
+    if self.email_tag_filter_strategy == const.EXCLUDE_IGNORED:
+
+        ignored_tags = Tag.objects.filter(
+                                user_selections__reason = 'bad',
+                                user_selections__user = self
+                            )
+
+        wk = self.ignored_tags.strip().split()
+        ignored_by_wildcards = Tag.objects.get_by_wildcards(wk)
+
+        return questions.exclude(
+                        tags__in = ignored_tags
+                    ).exclude(
+                        tags__in = ignored_by_wildcards
+                    )
+    elif self.email_tag_filter_strategy == const.INCLUDE_INTERESTING:
+        selected_tags = Tag.objects.filter(
+                                user_selections__reason = 'good',
+                                user_selections__user = self
+                            )
+
+        wk = self.interesting_tags.strip().split()
+        selected_by_wildcards = Tag.objects.get_by_wildcards(wk)
+
+        tag_filter = models.Q(tags__in = list(selected_tags)) \
+                    | models.Q(tags__in = list(selected_by_wildcards))
+
+        return questions.filter( tag_filter )
+    else:
+        return questions
 
 def get_messages(self):
     messages = []
@@ -1734,35 +1773,24 @@ def user_get_flags_for_post(self, post):
     flags = self.get_flags()
     return flags.filter(content_type = post_content_type, object_id=post.id)
 
-def user_increment_response_count(user):
-    """increment response counter for user
-    by one
+def user_update_response_counts(user):
+    """Recount number of responses to the user.
     """
-    user.new_response_count += 1
+    ACTIVITY_TYPES = const.RESPONSE_ACTIVITY_TYPES_FOR_DISPLAY
+    ACTIVITY_TYPES += (const.TYPE_ACTIVITY_MENTION,)
 
-def user_decrement_response_count(user, amount=1):
-    """decrement response count for the user 
-    by one, log critical error if count would go below zero
-    but limit decrementation at zero exactly
-    """
-    assert(amount > 0)
-    user.seen_response_count += amount
-    if user.new_response_count >= amount:
-        user.new_response_count -= amount
-    user.clean_response_counts()
+    user.new_response_count = ActivityAuditStatus.objects.filter(
+                                    user = user,
+                                    status = ActivityAuditStatus.STATUS_NEW,
+                                    activity__activity_type__in = ACTIVITY_TYPES
+                                ).count()
+    user.seen_response_count = ActivityAuditStatus.objects.filter(
+                                    user = user,
+                                    status = ActivityAuditStatus.STATUS_SEEN,
+                                    activity__activity_type__in = ACTIVITY_TYPES
+                                ).count()
+    user.save()
 
-def user_clean_response_counts(user):
-    ""
-    if user.new_response_count < 0:
-        user.new_response_count = 0
-        logging.critical(
-                'new response count wanted to go below zero for %s' % user.username
-            )
-    if user.seen_response_count < 0:
-        user.seen_response_count = 0
-        logging.critical(
-                'seen response count wanted to go below zero form %s' % user.username
-            )
 
 def user_receive_reputation(self, num_points):
     new_points = self.reputation + num_points
@@ -1831,10 +1859,14 @@ User.add_to_class('downvote', downvote)
 User.add_to_class('flag_post', flag_post)
 User.add_to_class('receive_reputation', user_receive_reputation)
 User.add_to_class('get_flags', user_get_flags)
-User.add_to_class('get_flag_count_posted_today', user_get_flag_count_posted_today)
+User.add_to_class(
+    'get_flag_count_posted_today',
+    user_get_flag_count_posted_today
+)
 User.add_to_class('get_flags_for_post', user_get_flags_for_post)
 User.add_to_class('get_profile_url', get_profile_url)
 User.add_to_class('get_profile_link', get_profile_link)
+User.add_to_class('get_tag_filtered_questions', user_get_tag_filtered_questions)
 User.add_to_class('get_messages', get_messages)
 User.add_to_class('delete_messages', delete_messages)
 User.add_to_class('toggle_favorite_question', toggle_favorite_question)
@@ -1842,9 +1874,7 @@ User.add_to_class('follow_question', user_follow_question)
 User.add_to_class('unfollow_question', user_unfollow_question)
 User.add_to_class('mark_tags', user_mark_tags)
 User.add_to_class('is_following', user_is_following)
-User.add_to_class('decrement_response_count', user_decrement_response_count)
-User.add_to_class('increment_response_count', user_increment_response_count)
-User.add_to_class('clean_response_counts', user_clean_response_counts)
+User.add_to_class('update_response_counts', user_update_response_counts)
 User.add_to_class('can_have_strong_url', user_can_have_strong_url)
 User.add_to_class('is_administrator', user_is_administrator)
 User.add_to_class('set_admin_status', user_set_admin_status)
