@@ -2,6 +2,7 @@ import datetime
 import hashlib
 
 from django.conf import settings
+from askbot.conf import settings as askbot_settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -455,7 +456,7 @@ class Message(models.Model):
             final_reason = ', '.join([r for i,r in enumerate(reasons) if r and not r.isspace() and percents[i] < 50])
             auto = average >= 50
         if auto is None:
-            auto = getattr(settings, 'POSTMAN_AUTO_MODERATE_AS', None)
+            auto = getattr(askbot_settings, 'POSTMAN_AUTO_MODERATE_AS', None)
         if auto is True:
             self.moderation_status = STATUS_ACCEPTED
         elif auto is False:

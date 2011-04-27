@@ -215,3 +215,7 @@ djcelery.setup_loader()
 
 CSRF_COOKIE_NAME = 'askbot_scrf'
 CSRF_COOKIE_DOMAIN = ''#enter domain name here - e.g. example.com
+
+POSTMAN_TEMPLATES = 'jinja2'
+POSTMAN_NOTIFIER_APP = None
+POSTMAN_MAILER_APP = None

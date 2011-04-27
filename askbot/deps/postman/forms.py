@@ -13,7 +13,7 @@ Examples of customization:
 
 """
 from django import forms
-from django.conf import settings
+from askbot.conf import settings
 from django.contrib.auth.models import User
 from django.db import transaction
 from django.utils.translation import ugettext, ugettext_lazy as _
@@ -50,7 +50,6 @@ class BaseWriteForm(forms.ModelForm):
         if 'recipients' in self.fields:
             if user_filter and hasattr(self.fields['recipients'], 'user_filter'):
                 self.fields['recipients'].user_filter = user_filter
-
             if getattr(settings, 'POSTMAN_DISALLOW_MULTIRECIPIENTS', False):
                 max = 1
             if max is not None and hasattr(self.fields['recipients'], 'set_max') \
