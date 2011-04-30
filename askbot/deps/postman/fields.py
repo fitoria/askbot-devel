@@ -74,7 +74,9 @@ class BasicCommaSeparatedUserField(CharField):
         names = super(BasicCommaSeparatedUserField, self).clean(value)
         if not names:
             return [] 
-        names = names.replace(' ', '').split(',') 
+
+        if not isinstance(names, list):
+            names = names.replace(' ', '').split(',') 
         users = list(User.objects.filter(is_active=True, username__in=names))
         unknown_names = set(names) ^ set([u.username for u in users])
         errors = []
