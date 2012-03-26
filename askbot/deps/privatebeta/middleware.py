@@ -1,4 +1,5 @@
 import settings
+
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from askbot.conf import settings as askbot_settings
@@ -51,16 +52,10 @@ class PrivateBetaMiddleware(object):
 
         whitelisted_modules = ['django.contrib.auth.views',
                                'django.views.static',
-                               'privatebeta.views',
-                               'askbot.views.readers',
-                               'askbot.views.meta',
-                               'askbot.views.avatar_views',
-                               'askbot.views.users',
-                               'askbot.views.command', ]
+                               'privatebeta.views', ]
         if self.always_allow_modules:
             whitelisted_modules += self.always_allow_modules
         full_view_name = '%s.%s' % (view_func.__module__, view_func.__name__)
-        print full_view_name
 
         if full_view_name in self.never_allow_views:
             return HttpResponseRedirect(self.redirect_url)
