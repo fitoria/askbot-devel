@@ -1,7 +1,8 @@
-{% extends 'one_column_body.html' %}
+{% extends 'two_column_body.html' %}
 {% block title %}{% trans %}Invite request lists{% endtrans %}{% endblock %}
 {% block content %}
 <h1>{% trans %}Invite request{% endtrans %}</h1>
+<p>You can customize the invitation email and other settings in the <a href="/settings/PRIVATEBETA_MODE/">Private Beta Mode settings.</a></p>
 <form action="." method="post" accept-charset="utf-8">
   {% csrf_token %}
   <div class="clearfix">
@@ -11,9 +12,21 @@
     <input 
         type="submit"
         class='btn'
-        value="{% trans %}Continue &rarr;{% endtrans %}"></div> 
+        value="{% trans %}Continue &rarr;{% endtrans %}"> 
   </div> 
 </form>
+{% endblock %}
+{%block sidebar %}
+  <div class="box">
+    <h2>Invite with email</h2>
+    <form action="{%url privatebeta_invite_user %}" method="post" accept-charset="utf-8"> 
+  {% csrf_token %}
+  <div class="inputs">
+  {{invite_form.email}}
+  <input id="ignoredTagAdd" type="submit" class='btn' value="{%trans%}Send{%endtrans%}">
+  </div>
+</form>
+  </div>
 {% endblock %}
 {% block endjs %}
   <script type="text/javascript" charset="utf-8">

@@ -14,4 +14,7 @@
 {% if request.user.is_authenticated() and request.user.is_administrator() %}
     <a href="{% url site_settings %}">{% trans %}settings{% endtrans %}</a>
 {% endif %}
+{% if request.user.is_authenticated() and request.user.is_administrator() and settings.ENABLE_PRIVATEBETA %}
+    <a href="{% url privatebeta_invite_list %}">{% trans %}Private Beta invites{% endtrans %}</a>
+{% endif %}
     <a href="{% url "help" %}" title="{% trans %}help{% endtrans %}">{% trans %}help{% endtrans %}</a>

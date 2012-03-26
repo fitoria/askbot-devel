@@ -4,7 +4,7 @@ import functools
 from django.views.generic.simple import direct_to_template
 from django.core.urlresolvers import reverse
 from django.conf import settings
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponseForbidden
 from django.shortcuts import render_to_response, get_object_or_404, redirect
 from django.template import RequestContext
 
@@ -160,5 +160,18 @@ def invite_list(request):
         invites = InviteRequest.objects.filter(invited=False)
         form = InviteApprovalForm(invites)
 
-    context = {'form': form}
+    context = {'form': form, 'invite_form': InviteRequestForm()}
     return render_into_skin('privatebeta/invite_list.html', context, request)
+
+@owner_or_moderator_required
+def invite_user(request):
+    '''called from invite/list'''
+    if request.method == "POST":
+        form = InviteRequestForm(request.POST)
+        if form.is_valid():
+            invite = form.save()
+            invite.send_invite()
+            request.user.message_set.create(message='Invite sent to: %s' % invite.email)
+            return redirect(reverse('privatebeta_invite_list'))
+    else:
+        return HttpResponseForbiden()
