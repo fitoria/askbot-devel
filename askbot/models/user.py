@@ -1,14 +1,26 @@
 import datetime
 import logging
+import re
 from django.db import models
 from django.db.backends.dummy.base import IntegrityError
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.contrib.auth.models import User
+from django.contrib.auth.models import Group as AuthGroup
+from django.core import exceptions
+from django.forms import EmailField, URLField
 from django.utils.translation import ugettext as _
 from django.utils.html import strip_tags
 from askbot import const
+from askbot.conf import settings as askbot_settings
 from askbot.utils import functions
+from askbot.models.base import BaseQuerySetManager
+from askbot.models.tag import Tag
+from askbot.models.tag import clean_group_name#todo - delete this
+from askbot.forms import DomainNameField
+from askbot.utils.forms import email_is_allowed
+
+PERSONAL_GROUP_NAME_PREFIX = '_personal_'
 
 class ResponseAndMentionActivityManager(models.Manager):
     def get_query_set(self):
@@ -199,11 +211,8 @@ class Activity(models.Model):
         assert(user_count == 1)
         return user_qs[0]
 
-    def get_preview(self):
-        if  self.summary == '':
-            return strip_tags(self.content_object.html)[:300]
-        else:
-            return self.summary
+    def get_snippet(self, max_length = 120):
+        return self.content_object.get_snippet(max_length)
 
     def get_absolute_url(self):
         return self.content_object.get_absolute_url()
@@ -262,6 +271,13 @@ class EmailFeedSetting(models.Model):
         'q_sel': 'n',
         'm_and_c': 'n'
     }
+    MAX_EMAIL_SCHEDULE = {
+        'q_ask': 'i',
+        'q_ans': 'i',
+        'q_all': 'i',
+        'q_sel': 'i',
+        'm_and_c': 'i'
+    }
     FEED_TYPE_CHOICES = (
                     ('q_all',_('Entire forum')),
                     ('q_ask',_('Questions that I asked')),
@@ -291,6 +307,8 @@ class EmailFeedSetting(models.Model):
     class Meta:
         #added to make account merges work properly
         unique_together = ('subscriber', 'feed_type')
+        app_label = 'askbot'
+
 
     def __str__(self):
         if self.reported_at is None:
@@ -331,5 +349,245 @@ class EmailFeedSetting(models.Model):
         self.reported_at = datetime.datetime.now()
         self.save()
 
+
+class AuthUserGroups(models.Model):
+    """explicit model for the auth_user_groups bridge table.
+    """
+    group = models.ForeignKey(AuthGroup)
+    user = models.ForeignKey(User)
+
+    class Meta:
+        app_label = 'auth'
+        unique_together = ('group', 'user')
+        db_table = 'auth_user_groups'
+        managed = False
+
+
+class GroupMembership(AuthUserGroups):
+    """contains one-to-one relation to ``auth_user_group``
+    and extra membership profile fields"""
+    #note: this may hold info on when user joined, etc
+    NONE = -1#not part of the choices as for this records should be just missing
+    PENDING = 0
+    FULL = 1
+    LEVEL_CHOICES = (#'none' is by absence of membership
+        (PENDING, 'pending'),
+        (FULL, 'full')
+    )
+    ALL_LEVEL_CHOICES = LEVEL_CHOICES + ((NONE, 'none'),)
+
+    level = models.SmallIntegerField(
+                        default=FULL,
+                        choices=LEVEL_CHOICES,
+                    )
+
+
     class Meta:
         app_label = 'askbot'
+
+    @classmethod
+    def get_level_value_display(cls, level):
+        """returns verbose value given a numerical value
+        includes the "fanthom" NONE
+        """
+        values_dict = dict(cls.ALL_LEVEL_CHOICES)
+        return values_dict[level]
+
+
+class GroupQuerySet(models.query.QuerySet):
+    """Custom query set for the group"""
+
+    def exclude_personal(self):
+        """excludes the personal groups"""
+        return self.exclude(
+            name__startswith=PERSONAL_GROUP_NAME_PREFIX
+        )
+
+    def get_personal(self):
+        """filters for the personal groups"""
+        return self.filter(
+            name__startswith=PERSONAL_GROUP_NAME_PREFIX
+        )
+
+    def get_for_user(self, user=None, private=False):
+        if private:
+            global_group = Group.objects.get_global_group()
+            return self.filter(
+                        user=user
+                    ).exclude(id=global_group.id)
+        else:
+            return self.filter(user = user)
+
+    def get_by_name(self, group_name = None):
+        return self.get(name = clean_group_name(group_name))
+
+
+class GroupManager(BaseQuerySetManager):
+    """model manager for askbot groups"""
+    
+    def get_query_set(self):
+        return GroupQuerySet(self.model)
+
+    def get_global_group(self):
+        """Returns the global group,
+        if necessary, creates one
+        """
+        #todo: when groups are disconnected from tags,
+        #find comment as shown below in the test cases and
+        #revert the values
+        #todo: change groups to django groups
+        group_name = askbot_settings.GLOBAL_GROUP_NAME
+        try:
+            return self.get_query_set().get(name=group_name)
+        except Group.DoesNotExist:
+            return self.get_query_set().create(name=group_name)
+
+    def create(self, **kwargs):
+        name = kwargs['name']
+        try:
+            group_ptr = AuthGroup.objects.get(name=name)
+            kwargs['group_ptr'] = group_ptr
+        except AuthGroup.DoesNotExist:
+            pass
+        return super(GroupManager, self).create(**kwargs)
+
+    def get_or_create(self, name = None, user = None, openness=None):
+        """creates a group tag or finds one, if exists"""
+        #todo: here we might fill out the group profile
+        try:
+            #iexact is important!!! b/c we don't want case variants
+            #of tags
+            group = self.get(name__iexact = name)
+        except self.model.DoesNotExist:
+            if openness is None:
+                group = self.create(name=name)
+            else:
+                group = self.create(name=name, openness=openness)
+        return group
+
+
+class Group(AuthGroup):
+    """group profile for askbot"""
+    OPEN = 0
+    MODERATED = 1
+    CLOSED = 2
+    OPENNESS_CHOICES = (
+        (OPEN, 'open'),
+        (MODERATED, 'moderated'),
+        (CLOSED, 'closed'),
+    )
+    logo_url = models.URLField(null=True)
+    description = models.OneToOneField(
+                    'Post', related_name='described_group',
+                    null=True, blank=True
+                )
+    moderate_email = models.BooleanField(default=True)
+    moderate_answers_to_enquirers = models.BooleanField(
+                        default=False,
+                        help_text='If true, answers to outsiders questions '
+                                'will be shown to the enquirers only when '
+                                'selected by the group moderators.'
+                    )
+    openness = models.SmallIntegerField(default=CLOSED, choices=OPENNESS_CHOICES)
+    #preapproved email addresses and domain names to auto-join groups
+    #trick - the field is padded with space and all tokens are space separated
+    preapproved_emails = models.TextField(
+                            null = True, blank = True, default = ''
+                        )
+    #only domains - without the '@' or anything before them
+    preapproved_email_domains = models.TextField(
+                            null = True, blank = True, default = ''
+                        )
+
+    is_vip = models.BooleanField(default=False)
+
+    objects = GroupManager()
+
+    class Meta:
+        app_label = 'askbot'
+        db_table = 'askbot_group'
+
+    def get_moderators(self):
+        """returns group moderators"""
+        user_filter = models.Q(is_superuser=True) | models.Q(status='m')
+        user_filter = user_filter & models.Q(groups__in=[self])
+        return User.objects.filter(user_filter)
+
+    def has_moderator(self, user):
+        """true, if user is a group moderator"""
+        mod_ids = self.get_moderators().values_list('id', flat=True)
+        return user.id in mod_ids
+
+    def get_openness_choices(self):
+        """gives answers to question
+        "How can users join this group?"
+        """
+        return (
+            (Group.OPEN, _('Can join when they want')),
+            (Group.MODERATED, _('Users ask permission')),
+            (Group.CLOSED, _('Moderator adds users'))
+        )
+
+    def get_openness_level_for_user(self, user):
+        """returns descriptive value, because it is to be used in the
+        templates. The value must match the verbose versions of the
+        openness choices!!!
+        """
+        if user.is_anonymous():
+            return 'closed'
+
+        #a special case - automatic global group cannot be joined or left
+        if self.name == askbot_settings.GLOBAL_GROUP_NAME:
+            return 'closed'
+
+        #todo - return 'closed' for internal per user groups too
+
+        if self.openness == Group.OPEN:
+            return 'open'
+
+        if user.is_administrator_or_moderator():
+            return 'open'
+
+        #relying on a specific method of storage
+        if email_is_allowed(
+            user.email,
+            allowed_emails=self.preapproved_emails,
+            allowed_email_domains=self.preapproved_email_domains
+        ):
+            return 'open'
+
+        if self.openness == Group.MODERATED:
+            return 'moderated'
+
+        return 'closed'
+
+    def is_personal(self):
+        """``True`` if the group is personal"""
+        return self.name.startswith(PERSONAL_GROUP_NAME_PREFIX)
+
+    def clean(self):
+        """called in `save()`
+        """
+        emails = functions.split_list(self.preapproved_emails)
+        email_field = EmailField()
+        try:
+            map(lambda v: email_field.clean(v), emails)
+        except exceptions.ValidationError:
+            raise exceptions.ValidationError(
+                _('Please give a list of valid email addresses.')
+            )
+        self.preapproved_emails = ' ' + '\n'.join(emails) + ' '
+
+        domains = functions.split_list(self.preapproved_email_domains)
+        domain_field = DomainNameField()
+        try:
+            map(lambda v: domain_field.clean(v), domains)
+        except exceptions.ValidationError:
+            raise exceptions.ValidationError(
+                _('Please give a list of valid email domain names.')
+            )
+        self.preapproved_email_domains = ' ' + '\n'.join(domains) + ' '
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super(Group, self).save(*args, **kwargs)

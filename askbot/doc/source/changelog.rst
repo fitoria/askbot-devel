@@ -1,8 +1,62 @@
 Changes in Askbot
 =================
 
-Development version (not released yet)
---------------------------------------
+Development version
+-------------------
+* Added support of Haystack for search (Adolfo)
+* Added minimum reputation setting to accept any answer as correct (Evgeny)
+* Added "VIP" option to groups - if checked, all posts belong to the group and users of that group in the future will be able to moderate those posts. Moderation features for VIP group are in progress (Evgeny)
+* Added setting `NOTIFICATION_DELAY_TIME` to use with enabled celery daemon (Adolfo)
+* Added setting `ASKBOT_INTERNAL_IPS` - to allow anonymous access to 
+  closed sites from dedicated IP addresses (Evgeny)
+* Moved default skin from `askbot/skins/default` to simply `askbot` (Evgeny)
+* Repost comment as answer (Adolfo)
+* Question list widget (Adolfo)
+* Ask a question widget (Adolfo)
+* Embeddable widget generator (Adolfo)
+* Groups are shown in the dropdown menu in the header (Adolfo)
+* Added group moderation requests to the moderators inboxes (Evgeny)
+* Group joining may be open/closed or moderated (Evgeny)
+* Adding "extra options" to the ldap session (Evgeny)
+* Tag moderation (Evgeny)
+* Editable optional three level category selector for the tags (Evgeny)
+* Tag editor adding tags as they are typed (Evgeny)
+* Added optional support for unicode slugs (Evgeny)
+* Allow switching comment with answer and answer with question comment (Adolfo)
+* Allow user names longer than 30 characters (Evgeny)
+* Option to disable feedback form for the anonymos users (Evgeny)
+* Optional restriction to have confirmed email address to join forum (Evgeny)
+* Optional list of allowed email addresses and email domain name for the new users (Evgeny)
+* Optional support for unicode slugs (Evgeny)
+* Optionally allow limiting one answer per question per person (Evgeny)
+* Added management command `build_livesettings_cache` (Adolfo)
+* Administrators can post under fictional user accounts without logging out (jtrain, Evgeny)
+* Welcome email for the case when replying by email is enabled (Evgeny)
+* Detection of email signature based on the response to the welcome email (Evgeny)
+* Hide "website" and "about" section of the blocked user profiles
+  to help prevent user profile spam (Evgeny)
+* Added a function to create a custom user profile tab,
+  the feature requires access to the server (Evgeny)
+* Added optional top banner to the question page (Evgeny)
+* Made "bootstrap mode" default and created instead "large site mode" (Evgeny)
+* Added interesting/ignored/subscribed tags to the user profile page (Paul Backhouse, Evgeny)
+
+0.7.43 (May 14, 2012)
+---------------------
+* User groups (Evgeny)
+* Public/Private/Hidden reputation (Evgeny)
+* Enabling/disabling the badges system (Evgeny)
+* Created a basic post moderation feature (Evgeny)
+* Created a way to specify reasons for rejecting posts in a modal dialog (Evgeny)
+* A number of bug fixes (Adolfo Fitoria, Jim Tittsler, 
+  Evgeny Fadeev, Robin Stocker, Radim Řehůřek, Silvio Heuberger)
+
+0.7.41, 0.7.42 (April 21, 2012)
+-------------------------------
+* Bug fixes
+
+0.7.40 (March 29, 2012)
+-----------------------
 * New data models!!! (`Tomasz Zieliński <http://pyconsultant.eu>`_)
 * Made email recovery link work when askbot is deployed on subdirectory (Evgeny)
 * Added tests for the CSRF_COOKIE_DOMAIN setting in the startup_procedures (Evgeny)
@@ -25,6 +79,8 @@ Development version (not released yet)
 * Added "reply by email" function (`Vasil Vangelovski <http://www.atomidata.com>`_)
 * Enabled "ask by email" via Lamson (Evgeny)
 * Tags can be optional (Evgeny)
+* Fixed dependency of Django up to 1.3.1, because settings must be upgraded
+  for Django 1.4 (Evgeny)
 
 0.7.39 (Jan 11, 2012)
 ---------------------

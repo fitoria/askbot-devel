@@ -66,7 +66,7 @@ settings.register(
     livesettings.StringValue(
         EMAIL,
         'DEFAULT_NOTIFICATION_DELIVERY_SCHEDULE_Q_ASK',
-        default='w',
+        default='i',
         choices=const.NOTIFICATION_DELIVERY_SCHEDULE_CHOICES,
         description=_('Default notification frequency questions asked by the user'),
         help_text=_(
@@ -80,7 +80,7 @@ settings.register(
     livesettings.StringValue(
         EMAIL,
         'DEFAULT_NOTIFICATION_DELIVERY_SCHEDULE_Q_ANS',
-        default='w',
+        default='d',
         choices=const.NOTIFICATION_DELIVERY_SCHEDULE_CHOICES,
         description=_('Default notification frequency questions answered by the user'),
         help_text=_(
@@ -94,7 +94,7 @@ settings.register(
     livesettings.StringValue(
         EMAIL,
         'DEFAULT_NOTIFICATION_DELIVERY_SCHEDULE_Q_SEL',
-        default='w',
+        default='i',
         choices=const.NOTIFICATION_DELIVERY_SCHEDULE_CHOICES,
         description=_('Default notification frequency questions individually \
                        selected by the user'),
@@ -109,7 +109,7 @@ settings.register(
     livesettings.StringValue(
         EMAIL,
         'DEFAULT_NOTIFICATION_DELIVERY_SCHEDULE_M_AND_C',
-        default='w',
+        default='i',
         choices=const.NOTIFICATION_DELIVERY_SCHEDULE_CHOICES,
         description=_('Default notification frequency for mentions \
                        and comments'),
@@ -274,8 +274,6 @@ settings.register(
     )
 )
 
-
-
 settings.register(
      livesettings.BooleanValue(
          EMAIL,
@@ -291,6 +289,31 @@ settings.register(
 )
 
 settings.register(
+    livesettings.StringValue(
+        EMAIL,
+        'SELF_NOTIFY_EMAILED_POST_AUTHOR_WHEN',
+        description = _(
+            'Emailed post: when to notify author about publishing'
+        ),
+        choices = const.SELF_NOTIFY_EMAILED_POST_AUTHOR_WHEN_CHOICES,
+        default = const.NEVER
+    )
+)
+
+#not implemented at this point
+#settings.register(
+#    livesettings.IntegerValue(
+#        EMAIL,
+#        'SELF_NOTIFY_WEB_POST_AUTHOR_WHEN',
+#        description = _(
+#            'Web post: when to notify author about publishing'
+#        ),
+#        choices = const.SELF_NOTIFY_WEB_POST_AUTHOR_WHEN_CHOICES,
+#        default =  const.NEVER
+#    )
+#)
+
+settings.register(
      livesettings.StringValue(
          EMAIL,
         'REPLY_BY_EMAIL_HOSTNAME',
@@ -301,8 +324,6 @@ settings.register(
     )
 )
 
-
-
 settings.register(
     livesettings.IntegerValue(
         EMAIL,
@@ -311,4 +332,3 @@ settings.register(
         description=_('Email replies having fewer words than this number will be posted as comments instead of answers')
     )
 )
-

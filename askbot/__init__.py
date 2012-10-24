@@ -5,17 +5,15 @@ Functions in the askbot module perform various
 basic actions on behalf of the forum application
 """
 import os
-import smtplib
-import sys
-import logging
+import platform
 
-VERSION = (0, 7, 39)
+VERSION = (0, 7, 43)
 
 #keys are module names used by python imports,
 #values - the package qualifier to use for pip
 REQUIREMENTS = {
     'akismet': 'akismet',
-    'django': 'django>=1.1.2',
+    'django': 'django==1.3.1',
     'jinja2': 'Jinja2',
     'coffin': 'Coffin>=0.3',
     'south': 'South>=0.7.1',
@@ -33,25 +31,33 @@ REQUIREMENTS = {
     'recaptcha_works': 'django-recaptcha-works',
     'openid': 'python-openid',
     'pystache': 'pystache==0.3.1',
-    'lamson': 'Lamson',
+    'pytz': 'pytz',
+    'tinymce': 'django-tinymce',
+    'longerusername': 'longerusername',
+    'bs4': 'beautifulsoup4'
 }
 
+if platform.system() != 'Windows':
+    REQUIREMENTS['lamson'] = 'Lamson'
+    
 #necessary for interoperability of django and coffin
 try:
     from askbot import patches
     from askbot.deployment.assertions import assert_package_compatibility
     assert_package_compatibility()
     patches.patch_django()
-    patches.patch_coffin()#must go after django
+    patches.patch_coffin()  # must go after django
 except ImportError:
     pass
 
+
 def get_install_directory():
     """returns path to directory
-    where code of the askbot django application 
+    where code of the askbot django application
     is installed
     """
     return os.path.dirname(__file__)
+
 
 def get_path_to(relative_path):
     """returns absolute path to a file
@@ -71,10 +77,11 @@ def get_version():
     """
     return '.'.join([str(subversion) for subversion in VERSION])
 
+
 def get_database_engine_name():
     """returns name of the database engine,
     independently of the version of django
-    - for django >=1.2 looks into ``settings.DATABASES['default']``, 
+    - for django >=1.2 looks into ``settings.DATABASES['default']``,
     (i.e. assumes that askbot uses database named 'default')
     , and for django 1.1 and below returns settings.DATABASE_ENGINE
     """

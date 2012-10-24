@@ -37,6 +37,11 @@ Programming and documentation
 * `Jacob Oscarson <http://www.aspektratio.net>`_
 * `Radim Řehůřek <https://github.com/piskvorky>`_
 * `monkut <https://github.com/monkut>`_
+* `Jim Tittsler <http://wikieducator.org/User:JimTittsler>`_
+* Silvio Heuberger
+* `Alexandros <https://github.com/alexandros-z>`_
+* `Paul Backhouse <https://github.com/powlo>`_
+* `jtrain <https://github.com/jtrain>`_
 
 Translations
 ------------
@@ -49,6 +54,6 @@ Translations
 * Pekka Gaiser - German
 * Pekka Järvinen - Finnish
 * Adi Robian - Romanian
-* Dario Ghilardi, Federico Poloni, `Luca Ferroni <http://www.linkedin.com/in/lucaferroni>`_ - Italian
+* `Stefano Mancini <https://github.com/xponrails>`_, Dario Ghilardi, Federico Poloni, `Luca Ferroni <http://www.linkedin.com/in/lucaferroni>`_ - Italian
 * `Jordi Bofill <https://github.com/jbofill>`_ - Catalan
 

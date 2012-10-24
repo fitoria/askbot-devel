@@ -117,6 +117,10 @@ class SearchState(object):
         else:
             self.sort = sort
 
+        #patch for empty stripped query, relevance sorting is useless then
+        if self.stripped_query in (None, '') and sort == 'relevance-desc':
+            self.sort = const.DEFAULT_POST_SORT_METHOD
+
         self.tags = []
         if tags:
             for t in tags.split(const.TAG_SEP):
@@ -216,9 +220,14 @@ class SearchState(object):
         ss.page = 1
         return ss
 
-    def remove_tags(self):
+    def remove_tags(self, tags = None):
         ss = self.deepcopy()
-        ss.tags = []
+        if tags:
+            ss.tags = list(
+                set(ss.tags) - set(tags)
+            )
+        else:
+            ss.tags = []
         ss.page = 1
         return ss
 
@@ -241,8 +250,13 @@ class SearchState(object):
 
 
 class DummySearchState(object): # Used for caching question/thread summaries
+
     def add_tag(self, tag):
         self.tag = tag
         return self
+
+    def change_scope(self, new_scope):
+        return self
+
     def full_url(self):
         return '<<<%s>>>' % self.tag

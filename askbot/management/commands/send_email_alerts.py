@@ -12,7 +12,7 @@ from askbot.conf import settings as askbot_settings
 from django.utils.datastructures import SortedDict
 from django.contrib.contenttypes.models import ContentType
 from askbot import const
-from askbot.utils import mail
+from askbot import mail
 from askbot.utils.slug import slugify
 
 DEBUG_THIS_COMMAND = False
@@ -84,7 +84,7 @@ class Command(NoArgsCommand):
             finally:
                 connection.close()
 
-    def get_updated_questions_for_user(self,user):
+    def get_updated_questions_for_user(self, user):
         """
         retreive relevant question updates for the user
         according to their subscriptions and recorded question
@@ -136,6 +136,9 @@ class Command(NoArgsCommand):
                             ).exclude(
                                 thread__closed=True
                             ).order_by('-thread__last_activity_at')
+
+        if askbot_settings.ENABLE_CONTENT_MODERATION:
+            base_qs = base_qs.filter(approved = True)
         #todo: for some reason filter on did not work as expected ~Q(viewed__who=user) | 
         #      Q(viewed__who=user,viewed__when__lt=F('thread__last_activity_at'))
         #returns way more questions than you might think it should
@@ -335,11 +338,7 @@ class Command(NoArgsCommand):
 
             #collect info on all sorts of news that happened after
             #the most recent emailing to the user about this question
-            q_rev = PostRevision.objects.question_revisions().filter(
-                                                post=q,
-                                                revised_at__gt=emailed_at
-                                            )
-
+            q_rev = q.revisions.filter(revised_at__gt=emailed_at)
             q_rev = q_rev.exclude(author=user)
 
             #now update all sorts of metadata per question
@@ -350,22 +349,23 @@ class Command(NoArgsCommand):
             else:
                 meta_data['new_q'] = False
                 
-            new_ans = Post.objects.get_answers().filter(
+            new_ans = Post.objects.get_answers(user).filter(
                                             thread=q.thread,
                                             added_at__gt=emailed_at,
                                             deleted=False,
                                         )
-
             new_ans = new_ans.exclude(author=user)
             meta_data['new_ans'] = len(new_ans)
-            ans_rev = PostRevision.objects.answer_revisions().filter(
-                                            # answer__question = q
-                                            post__thread=q.thread,
 
-                                            post__deleted = False,
-                                            revised_at__gt = emailed_at
-                                        ).distinct()
-            ans_rev = ans_rev.exclude(author=user)
+            ans_ids = Post.objects.get_answers(user).filter(
+                                            thread=q.thread,
+                                            added_at__gt=emailed_at,
+                                            deleted=False,
+                                        ).values_list(
+                                            'id', flat = True
+                                        )
+            ans_rev = PostRevision.objects.filter(post__id__in = ans_ids)
+            ans_rev = ans_rev.exclude(author=user).distinct()
             meta_data['ans_rev'] = len(ans_rev)
 
             comments = meta_data.get('comments', 0)
@@ -472,7 +472,7 @@ class Command(NoArgsCommand):
 
                 text += _(
                     '<p>Please remember that you can always <a '
-                    'hrefl"%(email_settings_link)s">adjust</a> frequency of the email updates or '
+                    'href="%(email_settings_link)s">adjust</a> frequency of the email updates or '
                     'turn them off entirely.<br/>If you believe that this message was sent in an '
                     'error, please email about it the forum administrator at %(admin_email)s.</'
                     'p><p>Sincerely,</p><p>Your friendly %(sitename)s server.</p>'

@@ -13,14 +13,29 @@ FORUM_DATA_RULES = livesettings.ConfigurationGroup(
                         super_group = DATA_AND_FORMATTING
                     )
 
+EDITOR_CHOICES = (
+    ('markdown', 'markdown'),
+    ('tinymce', 'WISYWIG (tinymce)')
+)
+
+settings.register(
+    livesettings.StringValue(
+        FORUM_DATA_RULES,
+        'EDITOR_TYPE',
+        default = 'markdown',
+        choices = EDITOR_CHOICES,
+        description = _('Editor for the posts')
+    )
+)
+
 settings.register(
     livesettings.BooleanValue(
         FORUM_DATA_RULES,
         'ENABLE_VIDEO_EMBEDDING',
         default = False,
-        description = _(
-            'Enable embedding videos. '
-            '<em>Note: please read <a href="%(url)s>read this</a> first.</em>'
+        description = _('Enable embedding videos. '),
+        help_text = _(
+            '<em>Note: please read <a href="%(url)s">read this</a> first.</em>'
         ) % {'url': const.DEPENDENCY_URLS['embedding-video']}
     )
 )
@@ -122,9 +137,50 @@ settings.register(
 settings.register(
     livesettings.BooleanValue(
         FORUM_DATA_RULES,
+        'LIMIT_ONE_ANSWER_PER_USER',
+        default = True,
+        description = _(
+            'Limit one answer per question per user'
+        )
+    )
+)
+
+settings.register(
+    livesettings.BooleanValue(
+        FORUM_DATA_RULES,
         'TAGS_ARE_REQUIRED',
         description = _('Are tags required?'),
         default = False,
+    )
+)
+
+settings.register(
+    livesettings.BooleanValue(
+        FORUM_DATA_RULES,
+        'ENABLE_TAG_MODERATION',
+        default = False,
+        description = _('Enable tag moderation'),
+        help_text = _(
+            'If enabled, any new tags will not be applied '
+            'to the questions, but emailed to the moderators. '
+            'To use this feature, tags must be optional.'
+        )
+    )
+)
+
+TAG_SOURCE_CHOICES = (
+    ('category-tree', _('category tree')),
+    ('user-input', _('user input')),
+)
+
+settings.register(
+    livesettings.StringValue(
+        FORUM_DATA_RULES,
+        'TAG_SOURCE',
+        description = _('Source of tags'),
+        #hidden = True,
+        choices = TAG_SOURCE_CHOICES,
+        default = 'user-input'
     )
 )
 
@@ -183,6 +239,44 @@ settings.register(
                         'many tags at once, a valid wildcard tag has a single '
                         'wildcard at the very end'
                     )
+    )
+)
+
+settings.register(
+    livesettings.BooleanValue(
+        FORUM_DATA_RULES,
+        'SUBSCRIBED_TAG_SELECTOR_ENABLED',
+        default = False,
+        description = _('Use separate set for subscribed tags'),
+        help_text = _(
+            'If enabled, users will have a third set of tag selections '
+            '- "subscribed" (by email) in additon to "interesting" '
+            'and "ignored"'
+        )
+    )
+)
+
+MARKED_TAG_DISPLAY_CHOICES = (
+    ('always', _('Always, for all users')),
+    ('never', _('Never, for all users')),
+    ('when-user-wants', _('Let users decide'))
+)
+settings.register(
+    livesettings.StringValue(
+        FORUM_DATA_RULES,
+        'MARKED_TAGS_ARE_PUBLIC_WHEN',
+        default = 'always',
+        choices = MARKED_TAG_DISPLAY_CHOICES,
+        description = _('Publicly show user tag selections')
+    )
+)
+
+settings.register(
+    livesettings.BooleanValue(
+        FORUM_DATA_RULES,
+        'TAG_SEARCH_INPUT_ENABLED',
+        default = False,
+        description = _('Enable separate tag search box on main page')
     )
 )
 

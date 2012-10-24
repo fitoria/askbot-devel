@@ -98,6 +98,7 @@ TEMPLATE_LOADERS = (
 
 MIDDLEWARE_CLASSES = (
     #'django.middleware.gzip.GZipMiddleware',
+    #'askbot.middleware.locale.LocaleMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     #'django.middleware.cache.UpdateCacheMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -149,6 +150,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
 
 
 INSTALLED_APPS = (
+    'longerusername',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -160,6 +162,8 @@ INSTALLED_APPS = (
     'django.contrib.humanize',
     'django.contrib.sitemaps',
     #'debug_toolbar',
+    #'haystack',
+    'tinymce',
     'askbot',
     'askbot.deps.django_authopenid',
     #'askbot.importers.stackexchange', #se loader
@@ -180,10 +184,12 @@ INSTALLED_APPS = (
 CACHE_BACKEND = 'locmem://'
 #needed for django-keyedcache
 CACHE_TIMEOUT = 6000
+#sets a special timeout for livesettings if you want to make them different
+LIVESETTINGS_CACHE_TIMEOUT = CACHE_TIMEOUT
 CACHE_PREFIX = 'askbot' #make this unique
 CACHE_MIDDLEWARE_ANONYMOUS_ONLY = True
 #If you use memcache you may want to uncomment the following line to enable memcached based sessions
-#SESSION_ENGINE = 'django.contrib.sessions.backends.cache_db'
+#SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
@@ -225,4 +231,45 @@ CSRF_COOKIE_NAME = 'askbot_csrf'
 #enter domain name here - e.g. example.com
 #CSRF_COOKIE_DOMAIN = ''
 
-STATICFILES_DIRS = ( os.path.join(ASKBOT_ROOT, 'skins'),)
+STATICFILES_DIRS = (
+    ('default/media', os.path.join(ASKBOT_ROOT, 'media')),
+)
+
+RECAPTCHA_USE_SSL = True
+
+#HAYSTACK_SETTINGS
+ENABLE_HAYSTACK_SEARCH = False
+HAYSTACK_SITECONF = 'askbot.search.haystack'
+#more information
+#http://django-haystack.readthedocs.org/en/v1.2.7/settings.html
+HAYSTACK_SEARCH_ENGINE = 'simple'
+
+TINYMCE_COMPRESSOR = True
+TINYMCE_SPELLCHECKER = False
+TINYMCE_JS_ROOT = os.path.join(STATIC_ROOT, 'default/media/js/tinymce/')
+TINYMCE_URL = STATIC_URL + 'default/media/js/tinymce/'
+TINYMCE_DEFAULT_CONFIG = {
+    'plugins': 'askbot_imageuploader,askbot_attachment',
+    'convert_urls': False,
+    'theme': 'advanced',
+    'content_css': STATIC_URL + 'default/media/style/tinymce/content.css',
+    'force_br_newlines': True,
+    'force_p_newlines': False,
+    'forced_root_block': '',
+    'mode' : 'textareas',
+    'oninit': "function(){ tinyMCE.activeEditor.setContent(askbot['data']['editorContent'] || ''); }",
+    'plugins': 'askbot_imageuploader,askbot_attachment',
+    'theme_advanced_toolbar_location' : 'top',
+    'theme_advanced_toolbar_align': 'left',
+    'theme_advanced_buttons1': 'bold,italic,underline,|,bullist,numlist,|,undo,redo,|,link,unlink,askbot_imageuploader,askbot_attachment',
+    'theme_advanced_buttons2': '',
+    'theme_advanced_buttons3' : '',
+    'theme_advanced_path': False,
+    'theme_advanced_resizing': True,
+    'theme_advanced_resize_horizontal': False,
+    'theme_advanced_statusbar_location': 'bottom',
+    'height': '250'
+}
+
+#delayed notifications, time in seconds, 15 mins by default
+NOTIFICATION_DELAY_TIME = 60 * 15

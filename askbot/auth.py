@@ -199,6 +199,11 @@ def onAnswerAccept(answer, user, timestamp=None):
                    reputation=answer.author.reputation)
         reputation.save()
 
+    if answer.author == question.author and user == question.author:
+        #a plug to prevent reputation gaming by posting a question
+        #then answering and accepting as best all by the same person
+        return
+
     user.receive_reputation(askbot_settings.REP_GAIN_FOR_ACCEPTING_ANSWER)
     user.save()
     reputation = Repute(user=user,
@@ -214,24 +219,29 @@ def onAnswerAcceptCanceled(answer, user, timestamp=None):
     if timestamp is None:
         timestamp = datetime.datetime.now()
     answer.thread.set_accepted_answer(answer=None, timestamp=None)
-
-    answer.author.receive_reputation(
-        askbot_settings.REP_LOSS_FOR_RECEIVING_CANCELATION_OF_ANSWER_ACCEPTANCE
-    )
-    answer.author.save()
-
     question = answer.thread._question_post()
 
-    reputation = Repute(
-        user=answer.author,
-        negative=\
-         askbot_settings.REP_LOSS_FOR_RECEIVING_CANCELATION_OF_ANSWER_ACCEPTANCE,
-        question=question,
-        reputed_at=timestamp,
-        reputation_type=-2,
-        reputation=answer.author.reputation
-    )
-    reputation.save()
+    if user != answer.author:
+        answer.author.receive_reputation(
+            askbot_settings.REP_LOSS_FOR_RECEIVING_CANCELATION_OF_ANSWER_ACCEPTANCE
+        )
+        answer.author.save()
+        reputation = Repute(
+            user=answer.author,
+            negative=\
+             askbot_settings.REP_LOSS_FOR_RECEIVING_CANCELATION_OF_ANSWER_ACCEPTANCE,
+            question=question,
+            reputed_at=timestamp,
+            reputation_type=-2,
+            reputation=answer.author.reputation
+        )
+        reputation.save()
+
+    if answer.author == question.author and user == question.author:
+        #a symmettric measure for the reputation gaming plug
+        #as in the onAnswerAccept function
+        #here it protects the user from uwanted reputation loss
+        return
 
     user.receive_reputation(
         askbot_settings.REP_LOSS_FOR_CANCELING_ANSWER_ACCEPTANCE
@@ -253,7 +263,7 @@ def onUpVoted(vote, post, user, timestamp=None):
 
     if post.post_type != 'comment':
         post.vote_up_count = int(post.vote_up_count) + 1
-    post.score = int(post.score) + 1
+    post.points = int(post.points) + 1
     post.save()
 
     if post.post_type == 'comment':
@@ -290,7 +300,7 @@ def onUpVotedCanceled(vote, post, user, timestamp=None):
         if post.vote_up_count < 0:
             post.vote_up_count  = 0
 
-    post.score = int(post.score) - 1
+    post.points = int(post.points) - 1
     post.save()
 
     if post.post_type == 'comment':
@@ -323,18 +333,20 @@ def onDownVoted(vote, post, user, timestamp=None):
     vote.save()
 
     post.vote_down_count = int(post.vote_down_count) + 1
-    post.score = int(post.score) - 1
+    post.points = int(post.points) - 1
     post.save()
 
     if not (post.wiki or post.is_anonymous):
         author = post.author
-        author.receive_reputation(askbot_settings.REP_LOSS_FOR_DOWNVOTING)
+        author.receive_reputation(
+            askbot_settings.REP_LOSS_FOR_RECEIVING_DOWNVOTE
+        )
         author.save()
 
         question = post.thread._question_post() # TODO: this is suboptimal if post is already a question
 
         reputation = Repute(user=author,
-                   negative=askbot_settings.REP_LOSS_FOR_DOWNVOTING,
+                   negative=askbot_settings.REP_LOSS_FOR_RECEIVING_DOWNVOTE,
                    question=question,
                    reputed_at=timestamp,
                    reputation_type=-3,
@@ -342,12 +354,12 @@ def onDownVoted(vote, post, user, timestamp=None):
         reputation.save()
 
         user.receive_reputation(
-            askbot_settings.REP_LOSS_FOR_RECEIVING_DOWNVOTE
+            askbot_settings.REP_LOSS_FOR_DOWNVOTING,
         )
         user.save()
 
         reputation = Repute(user=user,
-                   negative=askbot_settings.REP_LOSS_FOR_RECEIVING_DOWNVOTE,
+                   negative=askbot_settings.REP_LOSS_FOR_DOWNVOTING,
                    question=question,
                    reputed_at=timestamp,
                    reputation_type=-5,
@@ -363,7 +375,7 @@ def onDownVotedCanceled(vote, post, user, timestamp=None):
     post.vote_down_count = int(post.vote_down_count) - 1
     if post.vote_down_count < 0:
         post.vote_down_count  = 0
-    post.score = post.score + 1
+    post.points = post.points + 1
     post.save()
 
     if not (post.wiki or post.is_anonymous):

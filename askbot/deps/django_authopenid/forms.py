@@ -308,14 +308,14 @@ class LoginForm(forms.Form):
 class OpenidRegisterForm(forms.Form):
     """ openid signin form """
     next = NextUrlField()
-    username = UserNameField()
+    username = UserNameField(widget_attrs={'tabindex': 0})
     email = UserEmailField()
 
 class ClassicRegisterForm(SetPasswordForm):
     """ legacy registration form """
 
     next = NextUrlField()
-    username = UserNameField()
+    username = UserNameField(widget_attrs={'tabindex': 0})
     email = UserEmailField()
     login_provider = PasswordLoginProviderField()
     #fields password1 and password2 are inherited
@@ -392,7 +392,7 @@ class AccountRecoveryForm(forms.Form):
         if 'email' in self.cleaned_data:
             email = self.cleaned_data['email']
             try:
-                user = User.objects.get(email=email)
+                user = User.objects.get(email__iexact=email)
                 self.cleaned_data['user'] = user
             except User.DoesNotExist:
                 del self.cleaned_data['email']
