@@ -249,15 +249,23 @@ body.user-messages {
 }
 
 .lang-nav {
+    position: relative;
     ul {
+        display: none;
         list-style: none;
+        z-index: 10000;
+        margin: 0;
+    }
+    &:hover ul,
+    ul:hover {
+        display: block;
+        position: absolute;
+        width: 100px;
     }
     li {
-        display: inline;
-        padding-right: 16px;
-    }
-    li.current {
-        font-weight: bold;
+        color: @info-text;
+        background: white;
+        display: block;
     }
 }
 
@@ -1444,16 +1452,18 @@ ul#related-tags li {
         padding-right: 20px;
     }
     td.per-thread-controls {
-        width: 120px;/* 20px more to compensate for the padding */
+        width: 160px;/* 20px more to compensate for the padding */
         height: 30px;
         button {
             display: none;
         }
     }
-    th.decision-col,
     th.tags-col,
     th.users-col {
         width: 100px;
+    }
+    th.decision-col {
+        width: 140px;
     }
     tr.per-tag-controls {
         height: 30px;

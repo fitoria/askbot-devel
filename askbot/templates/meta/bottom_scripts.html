@@ -14,7 +14,7 @@
     </script>
 </div>
 <script type="text/javascript">
-    var i18nLang = '{{settings.LANGUAGE_CODE}}';
+    var i18nLang = '{{ language_code }}';
     var scriptUrl = '/{{settings.ASKBOT_URL}}'
     var askbotSkin = '{{settings.ASKBOT_DEFAULT_SKIN}}';
     var enableMathJax = {% if settings.ENABLE_MATHJAX %}true{% else %}false{% endif %};
@@ -29,7 +29,8 @@
     askbot['urls']['ask'] = '{% url "ask" %}';
 	askbot['urls']['questions'] = '{% url "questions" %}';
     askbot['settings']['static_url'] = '{{ settings.STATIC_URL }}';
-    askbot['settings']['minSearchWordLength'] = {{settings.MIN_SEARCH_WORD_LENGTH}};
+    askbot['settings']['minSearchWordLength'] = {{ settings.MIN_SEARCH_WORD_LENGTH }};
+    askbot['settings']['sharingSuffixText'] = '{{ settings.SHARING_SUFFIX_TEXT|escape }}';
 </script>
 <script 
     type="text/javascript"
