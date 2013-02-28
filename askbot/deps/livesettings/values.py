@@ -16,14 +16,14 @@ from django.core.files import storage
 from askbot.deps.livesettings.models import find_setting, LongSetting, Setting, SettingNotSet
 from askbot.deps.livesettings.overrides import get_overrides
 from askbot.deps.livesettings.utils import load_module, is_string_like, is_list_or_tuple
-from askbot.deps.livesettings.widgets import ImageInput
+from askbot.deps.livesettings.widgets import ImageInput, FileInput
 import datetime
 import logging
 import signals
 import os
 
-__all__ = ['BASE_GROUP', 'BASE_SUPER_GROUP', 'ConfigurationGroup', 'Value', 'BooleanValue', 
-      'DecimalValue', 'DurationValue',
+__all__ = ['BASE_GROUP', 'BASE_SUPER_GROUP', 'ConfigurationGroup', 'Value', 'BooleanValue',
+      'DecimalValue', 'DurationValue','FileValue',
       'FloatValue', 'IntegerValue', 'ModuleValue', 'PercentValue', 'PositiveIntegerValue', 'SortedDotDict',
       'StringValue', 'SuperGroup', 'ImageValue', 'LongStringValue', 'MultipleStringValue', 'URLValue']
 
@@ -374,7 +374,7 @@ class Value(object):
                     s.save()
 
                 signals.configuration_value_changed.send(self, old_value=current_value, new_value=new_value, setting=self)
-                
+
                 if self.clear_cache:
                     cache.clear()
 
@@ -678,6 +678,88 @@ class ImageValue(StringValue):
         #saved file path is relative to the upload_directory
         #so that things could be easily relocated
         super(ImageValue, self).update(url)
+
+class FileValue(StringValue):
+
+    def __init__(self, *args, **kwargs):
+        self.allowed_file_extensions = kwargs.pop(
+            'allowed_file_extensions',
+            ('jpg', 'gif', 'png')
+        )
+        self.upload_directory = kwargs.pop(
+                                    'upload_directory',
+                                    django_settings.MEDIA_ROOT
+                                )
+        self.upload_url = kwargs.pop(
+                                    'upload_url',
+                                    django_settings.MEDIA_URL
+                                )
+        self.url_resolver = kwargs.pop('url_resolver', None)
+        super(FileValue, self).__init__(*args, **kwargs)
+
+    class field(forms.FileField):
+        def __init__(self, *args, **kwargs):
+            kwargs['required'] = False
+            self.allowed_file_extensions = kwargs.pop('allowed_file_extensions')
+            url_resolver = kwargs.pop('url_resolver')
+            kwargs['widget'] = FileInput()
+            forms.FileField.__init__(self, *args, **kwargs)
+
+        def clean(self, file_data, initial=None):
+            if not file_data and initial:
+                return initial
+
+            if not file_data and not self.required:
+                return super(forms.FileField, self).clean(file_data)
+            (base_name, ext) = os.path.splitext(file_data.name)
+            #first character in ext is .
+            if ext[1:].lower() not in self.allowed_file_extensions:
+                error_message = _('Allowed certificates file types are %(types)s') \
+                        % {'types': ', '.join(self.allowed_file_extensions)}
+                raise forms.ValidationError(error_message)
+            return super(forms.FileField, self).clean(file_data)
+
+    def make_field(self, **kwargs):
+        kwargs['url_resolver'] = self.url_resolver
+        kwargs['allowed_file_extensions'] = self.allowed_file_extensions
+        return super(FileValue, self).make_field(**kwargs)
+
+    def update(self, uploaded_file):
+        """uploaded_file is an instance of
+        django UploadedFile object
+        """
+        if not uploaded_file:
+            return
+        #0) initialize file storage
+        file_storage_class = storage.get_storage_class()
+
+        storage_settings = {}
+        if django_settings.DEFAULT_FILE_STORAGE == \
+            'django.core.files.storage.FileSystemStorage':
+            storage_settings = {
+                'location': self.upload_directory,
+                'base_url': self.upload_url
+            }
+
+        file_storage = file_storage_class(**storage_settings)
+
+        #1) come up with a file name
+        #todo: need better function here to calc name
+        file_name = file_storage.get_available_name(uploaded_file.name)
+        file_storage.save(file_name, uploaded_file)
+        url = file_storage.url(file_name)
+
+        old_file = self.value
+        old_file = old_file.replace(self.upload_url, '', 1)
+        old_file_path = os.path.join(self.upload_directory, old_file)
+        if os.path.isfile(old_file_path):
+            os.unlink(old_file_path)
+
+
+        #saved file path is relative to the upload_directory
+        #so that things could be easily relocated
+        super(FileValue, self).update(file_name)
+
 
 class MultipleStringValue(Value):
 

@@ -23,3 +23,13 @@ class ImageInput(forms.FileInput):
         output += 'src="%s"/><br/>' % self.url_resolver(value)
         output += super(ImageInput, self).render(name, value, attrs)
         return safestring.mark_safe(output)
+
+class FileInput(forms.FileInput):
+
+    def render(self, name, value, attrs = None):
+        if value:
+            output = 'Currently: <strong>%s</strong> <br/>' % value
+        else:
+            output = 'Currently: <strong>None Selected</strong> <br/>'
+        output += super(FileInput, self).render(name, value, attrs)
+        return safestring.mark_safe(output)
