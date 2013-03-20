@@ -607,6 +607,9 @@ class LongStringValue(Value):
 
 class FileValue(StringValue):
     '''Base class to store files in livesettings'''
+    widget_class = FileInput
+    widget_kwargs = {}
+
     def __init__(self, *args, **kwargs):
         self.allowed_file_extensions = kwargs.pop('allowed_file_extensions', None)
         self.upload_directory = kwargs.pop(
@@ -620,12 +623,18 @@ class FileValue(StringValue):
         self.url_resolver = kwargs.pop('url_resolver', None)
         super(FileValue, self).__init__(*args, **kwargs)
 
+
     class field(forms.FileField):
-        def __init__(self, *args, **kwargs):
+        def __init__(self,  *args, **kwargs):
             kwargs['required'] = False
             self.allowed_file_extensions = kwargs.pop('allowed_file_extensions')
             url_resolver = kwargs.pop('url_resolver')
-            kwargs['widget'] = FileInput()
+            self.widget_class = FileValue.widget_class
+            self.widget_kwargs = FileValue.widget_kwargs
+            if self.widget_kwargs:
+                kwargs['widget'] = self.widget_class(**self.widget_kwargs)
+            else:
+                kwargs['widget'] = self.widget_class()
             forms.FileField.__init__(self, *args, **kwargs)
 
         def clean(self, file_data, initial=None):
@@ -693,23 +702,11 @@ class ImageValue(FileValue):
             ('jpg', 'gif', 'png')
         )
 
-    class field(forms.FileField):
-        def __init__(self, *args, **kwargs):
-            kwargs['required'] = False
-            self.allowed_file_extensions = kwargs.pop('allowed_file_extensions')
-            url_resolver = kwargs.pop('url_resolver')
-            kwargs['widget'] = ImageInput(url_resolver = url_resolver)
-            forms.FileField.__init__(self, *args, **kwargs)
+    def make_field(self, **kwargs):
+        field = super(ImageValue, self).make_field(**kwargs)
+        field.widget = ImageInput(url_resolver=self.url_resolver)
+        return field
 
-        def clean(self, file_data, initial=None):
-            if not file_data and initial:
-                return initial
-            (base_name, ext) = os.path.splitext(file_data.name)
-            #first character in ext is .
-            if ext[1:].lower() not in self.allowed_file_extensions:
-                error_message = _('Allowed image file types are %(types)s') \
-                        % {'types': ', '.join(self.allowed_file_extensions)}
-                raise forms.ValidationError(error_message)
 
 class MultipleStringValue(Value):
 
