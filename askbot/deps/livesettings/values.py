@@ -607,8 +607,6 @@ class LongStringValue(Value):
 
 class FileValue(StringValue):
     '''Base class to store files in livesettings'''
-    widget_class = FileInput
-    widget_kwargs = {}
 
     def __init__(self, *args, **kwargs):
         self.allowed_file_extensions = kwargs.pop('allowed_file_extensions', None)
@@ -629,12 +627,7 @@ class FileValue(StringValue):
             kwargs['required'] = False
             self.allowed_file_extensions = kwargs.pop('allowed_file_extensions')
             url_resolver = kwargs.pop('url_resolver')
-            self.widget_class = FileValue.widget_class
-            self.widget_kwargs = FileValue.widget_kwargs
-            if self.widget_kwargs:
-                kwargs['widget'] = self.widget_class(**self.widget_kwargs)
-            else:
-                kwargs['widget'] = self.widget_class()
+            kwargs['widget'] = FileInput()
             forms.FileField.__init__(self, *args, **kwargs)
 
         def clean(self, file_data, initial=None):
