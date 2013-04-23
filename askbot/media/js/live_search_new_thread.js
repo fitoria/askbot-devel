@@ -2,7 +2,7 @@
 var liveSearchNewThreadInit = function(auto_focus_out) {
     var query = $('input#id_title.questionTitleInput');
     var prev_text = $.trim(query.val());
-    var search_url = askbot['urls']['titleSearch'];
+    var search_url = askbot['urls']['apiGetQuestions'];
     var running = false;
     var q_list_sel = 'question-list'; //id of question listing div
 

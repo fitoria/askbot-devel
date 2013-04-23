@@ -461,7 +461,7 @@ FullTextSearch.prototype.sendTitleSearchQuery = function(query_text) {
     var data = {query_text: query_text};
     var me = this;
     $.ajax({
-        url: askbot['urls']['titleSearch'],
+        url: askbot['urls']['apiGetQuestions'],
         data: data,
         dataType: 'json',
         success: function(data, text_status, xhr){

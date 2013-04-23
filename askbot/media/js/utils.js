@@ -44,6 +44,21 @@ var getNewUniqueInt = function() {
     return num;
 };
 
+var getSingletonController = function(controllerClass, name) {
+    askbot['controllers'] = askbot['controllers'] || {};
+    var controller = askbot['controllers'][name];
+    if (controller === undefined) {
+        controller = new controllerClass();
+        askbot['controllers'][name] = controller;
+    }
+    return controller;
+};
+
+var setController = function(controller, name) {
+    askbot['controllers'] = askbot['controllers'] || {};
+    askbot['controllers'][name] = controller;
+};
+
 var getUniqueValues = function(values) {
     var uniques = new Object();
     var out = new Array();
@@ -406,6 +421,10 @@ WrappedElement.prototype.getElement = function(){
         this.createDom();
     }
     return this._element;
+};
+
+WrappedElement.prototype.hasElement = function() {
+    return (this._element !== undefined);
 };
 WrappedElement.prototype.inDocument = function(){
     return (this._element && this._element.is(':hidden') === false);

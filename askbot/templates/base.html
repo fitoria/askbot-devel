@@ -12,7 +12,9 @@
         <meta name="google-site-verification" content="{{settings.GOOGLE_SITEMAP_CODE}}" />
         {% endif %}
         <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+        {% if settings.SITE_FAVICON %}
         <link rel="shortcut icon" href="{{ settings.SITE_FAVICON|media }}" />
+        {% endif %}
         <link
             rel="alternate"
             type="application/rss+xml"

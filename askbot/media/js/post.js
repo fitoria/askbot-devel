@@ -1873,6 +1873,7 @@ EditCommentForm.prototype.getSaveHandler = function(){
         var text = editor.getText();
         if (text.length < askbot['settings']['minCommentBodyLength']){
             editor.focus();
+            me.enableForm();
             return false;
         }
 
@@ -2564,19 +2565,26 @@ var FoldedEditor = function() {
 };
 inherits(FoldedEditor, WrappedElement);
 
+FoldedEditor.prototype.getEditor = function() {
+    return this._editor;
+};
+
+FoldedEditor.prototype.onAfterOpenHandler = function() {
+    var editor = this.getEditor();
+    if (editor) {
+        setTimeout(editor.focus(), 500);
+    }
+};
+
 FoldedEditor.prototype.getOpenHandler = function() {
     var editorBox = this._editorBox;
     var promptBox = this._prompt;
-    var editor = this._editor;
     var me = this;
     return function() {
         promptBox.hide();
         editorBox.show();
         me.getElement().addClass('unfolded');
-        if (editor) {
-            //editor.focus();
-            //setTimeout(function() {editor.focus()}, 300);
-        }
+        me.onAfterOpenHandler();
     };
 };
 

@@ -807,21 +807,22 @@ def delete_bulk_tag_subscription(request):
         return HttpResponseRedirect(reverse('list_bulk_tag_subscription'))
 
 @decorators.get_only
-def title_search(request):
+def api_get_questions(request):
     """json api for retrieving questions by title match"""
-    query = request.GET.get('query_text')
-
-    if query is None:
-        return HttpResponseBadRequest('Invalid query')
-
-    query = query.strip()
+    query = request.GET.get('query_text', '').strip()
+    tag_name = request.GET.get('tag_name', None)
 
     if askbot_settings.GROUPS_ENABLED:
         threads = models.Thread.objects.get_visible(user=request.user)
     else:
         threads = models.Thread.objects.all()
 
-    threads = threads.get_for_title_query(query)
+    if tag_name:
+        threads = threads.filter(tags__name=tag_name)
+
+    if query:
+        threads = threads.get_for_title_query(query)
+
     #todo: filter out deleted threads, for now there is no way
     threads = threads.distinct()[:30]
 
