@@ -148,7 +148,14 @@ class EmailSignatureDetectionTests(AskbotTestCase):
         self.u1 = self.create_user('user1', status = 'a')
         self.u2 = self.create_user('user2', status = 'a')
 
-    def test_detect_signature_in_response(self):
+    def _clean_signature(self, signature):
+        sig_part = list()
+        for line in signature.splitlines():
+            sig_part.append(line.rstrip())
+
+        return '\n'.join(sig_part)
+
+    def _detect_signature_in_response(self, signature):
         question = self.post_question(user = self.u1)
 
         #create a response address record
@@ -164,15 +171,24 @@ class EmailSignatureDetectionTests(AskbotTestCase):
         msg = MockMessage(
                 'some text',
                 self.u2.email,
-                signature = 'Yours Truly',
+                signature = signature,
                 response_code = reply_token.address
             )
         PROCESS(msg, address = reply_token.address)
 
-        signature = self.reload_object(self.u2).email_signature
-        self.assertEqual(signature, 'Yours Truly')
+        detected_signature = self.reload_object(self.u2).email_signature
+        self.assertEqual(detected_signature, self._clean_signature(signature))
+
+    def test_detect_signature_in_response(self):
+        self._detect_signature_in_response('yours truly')
+        self._detect_signature_in_response('-- \n yours truly \n another line')
+
 
     def test_detect_signature_in_welcome_response(self):
+        self._detect_signature_in_welcome_response('yours truly')
+        self._detect_signature_in_welcome_response('-- \n yours truly \n another line')
+
+    def _detect_signature_in_welcome_response(self, signature):
         reply_token = ReplyAddress.objects.create_new(
                                             user = self.u2,
                                             reply_action = 'validate_email'
@@ -183,7 +199,7 @@ class EmailSignatureDetectionTests(AskbotTestCase):
         msg = MockMessage(
                 'some text',
                 self.u2.email,
-                signature = 'Yours Truly',
+                signature = signature,
                 response_code = reply_token.address
             )
         VALIDATE_EMAIL(
@@ -191,5 +207,5 @@ class EmailSignatureDetectionTests(AskbotTestCase):
             address = reply_token.address
         )
 
-        signature = self.reload_object(self.u2).email_signature
-        self.assertEqual(signature, 'Yours Truly')
+        detected_signature = self.reload_object(self.u2).email_signature
+        self.assertEqual(detected_signature, self._clean_signature(signature))

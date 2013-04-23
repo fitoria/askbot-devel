@@ -305,7 +305,8 @@ def extract_user_signature(text, reply_code):
             #scan backwards from the end until the magic line
             if reply_code in line:
                 break
-            tail.insert(0, line)
+            #removing trailing spaces
+            tail.insert(0, line.rstrip())
 
         #strip off the leading quoted lines, there could be one or two
         #also strip empty lines
@@ -343,9 +344,9 @@ def process_parts(parts, reply_code=None):
     #split the body with it, and discard the "so and so wrote:" part
     if reply_code:
         signature = extract_user_signature(body_markdown, reply_code)
+        body_markdown = extract_reply(body_markdown)
     else:
         signature = None
-    body_markdown = extract_reply(body_markdown)
 
     body_markdown += attachments_markdown
     return body_markdown.strip(), stored_files, signature
