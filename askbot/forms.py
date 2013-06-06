@@ -389,6 +389,10 @@ def clean_tag(tag_name):
             return stored_tag.name
         except models.Tag.DoesNotExist:
             return tag_name
+        except models.Tag.MultipleObjectsReturned:
+            from askbot import models
+            stored_tag = models.Tag.objects.get(name__iexact=tag_name)[0]
+            return stored_tag.name
 
 
 class TagNamesField(forms.CharField):
@@ -1137,7 +1141,7 @@ class AnswerForm(PostAsSomeoneForm, PostPrivatelyForm):
         wiki = self.cleaned_data['wiki']
         text = self.cleaned_data['text']
         follow = self.cleaned_data['email_notify']
-        is_private = self.cleaned_data['post_privately']        
+        is_private = self.cleaned_data['post_privately']
 
         return user.post_answer(
             question = question,
