@@ -385,15 +385,10 @@ def clean_tag(tag_name):
     else:
         try:
             from askbot import models
-            stored_tag = models.Tag.objects.get(name__iexact=tag_name)
-            return stored_tag.name
-        except models.Tag.DoesNotExist:
-            return tag_name
-        except models.Tag.MultipleObjectsReturned:
-            from askbot import models
             stored_tag = models.Tag.objects.get(name__iexact=tag_name)[0]
             return stored_tag.name
-
+        except IndexError:
+            return tag_name
 
 class TagNamesField(forms.CharField):
     """field that receives AskBot tag names"""
