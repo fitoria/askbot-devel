@@ -385,7 +385,7 @@ def clean_tag(tag_name):
     else:
         try:
             from askbot import models
-            stored_tag = models.Tag.objects.get(name__iexact=tag_name)[0]
+            stored_tag = models.Tag.objects.filter(name__iexact=tag_name)[0]
             return stored_tag.name
         except IndexError:
             return tag_name
