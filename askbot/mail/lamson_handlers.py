@@ -9,7 +9,7 @@ from lamson.routing import route, stateless
 from lamson.server import Relay
 from askbot.models import ReplyAddress, Group, Tag
 from askbot import mail
-from askbot import spaces
+from askbot.models import spaces
 from askbot.conf import settings as askbot_settings
 from askbot.utils.html import site_url
 
@@ -288,7 +288,7 @@ def PROCESS(
     user.email_isvalid = True
     user.save()#todo: actually, saving is not necessary, if nothing changed
 
-    #here we might be in danger of chomping off some of the 
+    #here we might be in danger of chomping off some of the
     #message is body text ends with a legitimate text coinciding with
     #the user's email signature
     body_text = user.strip_email_signature(body_text)

@@ -13,7 +13,7 @@ import coffin.template
 from bs4 import BeautifulSoup
 
 from askbot import models
-from askbot import spaces
+from askbot.models import spaces
 from askbot.utils.slug import slugify
 from askbot.deployment import package_utils
 from askbot.tests.utils import AskbotTestCase

@@ -17,7 +17,7 @@ from askbot.models import Thread
 from askbot.models import Tag
 from askbot.models import Group
 from askbot.search.state_manager import DummySearchState
-from askbot import spaces
+from askbot.models import spaces
 from django.utils import simplejson
 from askbot.conf import settings as askbot_settings
 

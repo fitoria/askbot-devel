@@ -24,7 +24,7 @@ from django.http import Http404
 from askbot.conf import settings as askbot_settings
 from askbot.models import Post
 from askbot.utils.html import site_url
-from askbot import spaces
+from askbot.models import spaces
 
 class RssIndividualQuestionFeed(Feed):
     """rss feed class for particular questions

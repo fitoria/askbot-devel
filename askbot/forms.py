@@ -19,7 +19,7 @@ from askbot.mail import extract_first_email_address
 from recaptcha_works.fields import RecaptchaField
 from askbot.conf import settings as askbot_settings
 from askbot.conf import get_tag_display_filter_strategy_choices
-from askbot import spaces
+from askbot.models import spaces
 from tinymce.widgets import TinyMCE
 import logging
 
@@ -1160,7 +1160,7 @@ class AnswerForm(PostAsSomeoneForm, PostPrivatelyForm):
     def save(self, question, user):
         wiki = self.cleaned_data['wiki']
         text = self.cleaned_data['text']
-        is_private = self.cleaned_data['post_privately']        
+        is_private = self.cleaned_data['post_privately']
 
         return user.post_answer(
             question = question,

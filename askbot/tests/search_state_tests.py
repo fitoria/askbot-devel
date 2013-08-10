@@ -1,6 +1,6 @@
 from askbot.tests.utils import AskbotTestCase
 from askbot.search.state_manager import SearchState
-from askbot import spaces
+from askbot.models import spaces
 import askbot.conf
 from django.core import urlresolvers
 

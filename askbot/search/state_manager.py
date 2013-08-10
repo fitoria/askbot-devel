@@ -10,7 +10,7 @@ import askbot
 import askbot.conf
 from askbot.conf import settings as askbot_settings
 from askbot import const
-from askbot import spaces
+from askbot.models import spaces
 from askbot.utils.functions import strip_plus
 
 

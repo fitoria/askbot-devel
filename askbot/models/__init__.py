@@ -58,8 +58,8 @@ from askbot.models.badges import award_badges_signal, get_badge, BadgeData
 from askbot.models.repute import Award, Repute, Vote
 from askbot.models.widgets import AskWidget, QuestionWidget
 from askbot.models.spaces import Space, Feed, FeedToSpace, GroupToSpace
+from askbot.models.spaces import  get_default as get_default_space
 from askbot import auth
-from askbot import spaces
 from askbot.utils.decorators import auto_now_timestamp
 from askbot.utils.markup import URL_RE
 from askbot.utils.slug import slugify
@@ -1734,7 +1734,7 @@ def user_post_question(
         body_text = ' '
 
     if space is None:
-        space = spaces.get_default()
+        space = get_default_space()
 
     if title is None:
         raise ValueError('Title is required to post question')

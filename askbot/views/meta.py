@@ -17,7 +17,7 @@ from django.views import static
 from django.views.decorators import csrf
 from django.db.models import Max, Count
 from askbot import skins
-from askbot import spaces
+from askbot.models import spaces
 from askbot.conf import settings as askbot_settings
 from askbot.forms import FeedbackForm
 from askbot.utils.url_utils import get_login_url

@@ -40,7 +40,7 @@ from askbot import models
 from askbot import schedules
 from askbot.models.tag import Tag
 from askbot import const
-from askbot import spaces
+from askbot.models import spaces
 from askbot.startup_procedures import domain_is_bad
 from askbot.utils import functions
 from askbot.utils.html import sanitize_html

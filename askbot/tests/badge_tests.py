@@ -5,7 +5,7 @@ from django.test.client import Client
 from askbot.tests.utils import AskbotTestCase
 from askbot.conf import settings
 from askbot import models
-from askbot import spaces
+from askbot.models import spaces
 from askbot.models.badges import award_badges_signal
 
 class BadgeTests(AskbotTestCase):
