@@ -57,6 +57,7 @@ from askbot.models import signals
 from askbot.models.badges import award_badges_signal, get_badge, BadgeData
 from askbot.models.repute import Award, Repute, Vote
 from askbot.models.widgets import AskWidget, QuestionWidget
+from askbot.models.spaces import Space, Feed, FeedToSpace, GroupToSpace
 from askbot import auth
 from askbot import spaces
 from askbot.utils.decorators import auto_now_timestamp
@@ -3837,6 +3838,11 @@ __all__ = [
         'User',
 
         'ReplyAddress',
+
+        'Space',
+        'Feed',
+        'GroupToSpace',
+        'FeedToSpace',
 
         'get_model',
 ]

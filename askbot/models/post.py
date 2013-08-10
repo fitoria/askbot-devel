@@ -575,6 +575,9 @@ class Post(models.Model):
     def is_reject_reason(self):
         return self.post_type == 'reject_reason'
 
+    def is_space_description(self):
+        return self.post_type == 'space_description'
+
     def get_last_edited_date(self):
         """returns date of last edit or date of creation
         if there were no edits"""
@@ -612,7 +615,7 @@ class Post(models.Model):
 
     def get_text_converter(self):
         have_simple_comment = (
-            self.is_comment() and 
+            self.is_comment() and
             askbot_settings.COMMENTS_EDITOR_TYPE == 'plain-text'
         )
         if have_simple_comment:
@@ -786,7 +789,7 @@ class Post(models.Model):
         #todo: do we need this, can't we just use is_approved()?
         return self.approved is False
 
-    def get_absolute_url(self, 
+    def get_absolute_url(self,
             space=None, no_slug = False,
             question_post=None, thread=None
         ):
@@ -1702,6 +1705,12 @@ class Post(models.Model):
                 return const.TYPE_ACTIVITY_CREATE_REJECT_REASON, self
             else:
                 return const.TYPE_ACTIVITY_UPDATE_REJECT_REASON, self
+        elif self.is_space_description():
+            if created:
+                return const.TYPE_ACTIVITY_CREATE_SPACE_DESCRIPTION, self
+            else:
+                return const.TYPE_ACTIVITY_UPDATE_SPACE_DESCRIPTION, self
+
 
         raise NotImplementedError
 
@@ -1854,7 +1863,8 @@ class Post(models.Model):
             return self._answer__apply_edit(*args, **kwargs)
         elif self.is_question():
             return self._question__apply_edit(*args, **kwargs)
-        elif self.is_tag_wiki() or self.is_comment() or self.is_reject_reason():
+        elif self.is_tag_wiki() or self.is_comment() or \
+                self.is_reject_reason() or self.is_space_description():
             return self.__apply_edit(*args, **kwargs)
         raise NotImplementedError
 
@@ -1920,7 +1930,8 @@ class Post(models.Model):
 
     def add_revision(self, *kargs, **kwargs):
         #todo: unify these
-        if self.post_type in ('answer', 'comment', 'tag_wiki', 'reject_reason'):
+        if self.post_type in ('answer', 'comment', 'tag_wiki',
+                              'reject_reason', 'space_description'):
             return self.__add_revision(*kargs, **kwargs)
         elif self.is_question():
             return self._question__add_revision(*kargs, **kwargs)
