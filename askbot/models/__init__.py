@@ -1,6 +1,3 @@
-from askbot import startup_procedures
-startup_procedures.run()
-
 from django.contrib.auth.models import User
 #set up a possibility for the users to follow others
 try:
@@ -3843,3 +3840,6 @@ __all__ = [
 
         'get_model',
 ]
+
+from askbot import startup_procedures
+startup_procedures.run()
