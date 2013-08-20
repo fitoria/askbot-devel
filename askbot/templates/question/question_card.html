@@ -4,7 +4,7 @@
         {% include "question/share_buttons.html" %}
     </div>
     <div id="post-id-{{question.id}}" class="post-content{% if question.deleted %} deleted{% endif %}">
-        <h1><a href="{{ question.get_absolute_url() }}">{{ thread.get_title(question)|escape }}</a></h1>
+        <h1><a href="{{ question.get_absolute_url(feed=feed.name) }}">{{ thread.get_title(question)|escape }}</a></h1>
         {% include "question/question_tags.html" %}
         <div class="clearfix"></div>
 

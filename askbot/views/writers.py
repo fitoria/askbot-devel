@@ -16,6 +16,7 @@ from django.shortcuts import get_object_or_404
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.contrib.sites.models import get_current_site
 from django.http import HttpResponse
 from django.http import HttpResponseBadRequest
 from django.http import HttpResponseForbidden
@@ -221,14 +222,17 @@ def ask(request, feed=None):#view used to ask a new question
     user can start posting a question anonymously but then
     must login/register in order for the question go be shown
     """
-    request.session['askbot_feed'] = feed
+    current_site = get_current_site(request)
+    feed = get_object_or_404(models.Feed, name=feed,
+                             site=current_site)
+    request.session['askbot_feed'] = feed.name
     if request.user.is_authenticated():
         if request.user.is_read_only():
             referer = request.META.get("HTTP_REFERER", reverse('questions'))
             request.user.message_set.create(message=_('Sorry, but you have only read access'))
             return HttpResponseRedirect(referer)
 
-    form = forms.AskForm(request.REQUEST, feed=feed, user=request.user)
+    form = forms.AskForm(request.REQUEST, feed=feed.name, user=request.user)
     if request.method == 'POST':
         if form.is_valid():
             timestamp = datetime.datetime.now()
@@ -267,7 +271,7 @@ def ask(request, feed=None):#view used to ask a new question
                         user=user,
                         form_data=form.cleaned_data
                     )
-                    return HttpResponseRedirect(question.get_absolute_url())
+                    return HttpResponseRedirect(question.get_absolute_url(feed=feed.name))
                 except exceptions.PermissionDenied, e:
                     request.user.message_set.create(message = unicode(e))
                     return HttpResponseRedirect(reverse('index'))
@@ -594,6 +598,7 @@ def answer(request, id, form_class=forms.AnswerForm):#process a new answer
 
     authenticated users post directly
     """
+    current_site = get_current_site(request)
     question = get_object_or_404(models.Post, post_type='question', id=id)
     if request.method == "POST":
 

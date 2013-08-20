@@ -6,7 +6,7 @@
 {% endblock %}
 {% block keywords %}{{thread.tagname_meta_generator()}}{% endblock %}
 {% block forestyle %}
-    <link rel="canonical" href="{{ base_url }}{{question.get_absolute_url()}}" />
+    <link rel="canonical" href="{{ base_url }}{{question.get_absolute_url(feed=feed.name)}}" />
     <link rel="stylesheet" type="text/css" href="{{'/js/wmd/wmd.css'|media}}" />
 {% endblock %}
 {% block forejs %}

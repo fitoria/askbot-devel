@@ -63,7 +63,7 @@ class FeedManager(BaseQuerySetManager):
     def get_url(self, url_pattern_name, feed=None, kwargs=None):
         """reverse url prefixed with feed"""
         kwargs = kwargs or dict()
-        if type(feed) is type(Feed):
+        if type(feed) is Feed:
             kwargs['feed'] = feed.name
         elif type(feed) in (unicode, str):
             kwargs['feed'] = feed

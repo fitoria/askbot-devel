@@ -692,8 +692,13 @@ class Thread(models.Model):
             return self.get_answers(user).count()
 
     def get_default_feed(self):
-        #todo: accomodate for >1 feed
-        return Feed.objects.get_default()
+        default_feed = Feed.objects.get_default()
+        #include the feeds from FeedToSpace object.
+        thread_feeds = Feed.objects.filter(default_space__in=self.spaces.all()).exclude(id=default_feed.id)
+        try:
+            return thread_feeds[0]
+        except IndexError:
+            return default_feed
 
     def get_default_space(self):
         """returns default space to which this thread belongs
@@ -701,8 +706,7 @@ class Thread(models.Model):
         they will move into a special entity and
         probably each thread will have default space.
         """
-        #TODO: change for all
-        available_spaces = Space.objects.get_spaces()
+        available_spaces = Space.objects.all()
         tag_names = self.get_tag_names()
         #1) find ovelapping
         common_spaces = set(available_spaces) & set(tag_names)

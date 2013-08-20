@@ -50,7 +50,7 @@
 </span>
 <span class="action-link">
     <a  class="permant-link"
-        href="{{ answer.get_absolute_url(question_post=question) }}"
+        href="{{ answer.get_absolute_url(question_post=question, feed=feed.name) }}"
         title="{% trans %}permanent link{% endtrans %}">
         {% trans %}link{% endtrans %}
     </a>
