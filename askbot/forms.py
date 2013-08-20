@@ -19,7 +19,6 @@ from askbot.mail import extract_first_email_address
 from recaptcha_works.fields import RecaptchaField
 from askbot.conf import settings as askbot_settings
 from askbot.conf import get_tag_display_filter_strategy_choices
-from askbot.models import Space, Feed
 from tinymce.widgets import TinyMCE
 import logging
 
@@ -580,6 +579,7 @@ class ShowQuestionsForm(forms.Form):
     #todo: add all the remaining fields
 
     def clean_feed(self):
+        from askbot.models import Feed
         #space must match one of the items
         feed = self.cleaned_data.get('feed', '')
         if Feed.objects.feed_exists(feed):
@@ -963,6 +963,7 @@ class AskForm(PostAsSomeoneForm, PostPrivatelyForm):
             feed = Feed.objects.get(name=self._feed, site=current_site)
             return feed.default_space
         else:
+            from askbot.models import Space
             return Space.objects.get_default()
 
     def clean_ask_anonymously(self):

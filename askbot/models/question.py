@@ -17,7 +17,7 @@ from django.utils.translation import get_language
 import askbot
 from askbot.conf import settings as askbot_settings
 from askbot import mail
-from askbot.models import Space, Feed
+from askbot.models.spaces import Space, Feed
 from askbot.mail import messages
 from askbot.models.tag import Tag, TagSynonym
 from askbot.models.tag import get_tags_by_names
