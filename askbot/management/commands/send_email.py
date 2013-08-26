@@ -18,7 +18,7 @@ class Command(BaseCommand):
             raise CommandError('%s is not a valid email address' % (args[0]))
 
         send_mail(
-            subject_line = 'Askbot Mail Test',
-            body_text = 'Askbot Mail Test',
-            recipient_list = [args[0]],
+            subject_line='Askbot Mail Test',
+            body_text='Askbot Mail Test',
+            recipient=args[0]
         )

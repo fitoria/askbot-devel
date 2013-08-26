@@ -33,7 +33,6 @@ def get_feed(request):
 
 def get_next_url(request, default = None):
     #todo: clean this up - the "space" parameter is new
-    #hack: if you call this import from the top statements it fails
     from askbot.models import get_feed_url
     feed = get_feed(request)
     if feed:

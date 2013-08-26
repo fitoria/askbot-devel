@@ -81,7 +81,7 @@ class Command(NoArgsCommand):
                     (user.email, subject_line, body_text)
             else:
                 mail.send_mail(
-                    subject_line = subject_line,
-                    body_text = body_text,
-                    recipient_list = (user.email,)
+                    subject_line=subject_line,
+                    body_text=body_text,
+                    recipient=user,
                 )

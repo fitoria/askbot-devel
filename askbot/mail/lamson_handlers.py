@@ -170,9 +170,9 @@ def process_reply(func):
             template = get_template('email/reply_by_email_error.html')
             body_text = template.render(Context({'error':error}))#todo: set lang
             mail.send_mail(
-                subject_line = "Error posting your reply",
-                body_text = body_text,
-                recipient_list = [message.From],
+                subject_line="Error posting your reply",
+                body_text=body_text,
+                recipient=message.From
             )
 
     return wrapped
@@ -248,9 +248,9 @@ def VALIDATE_EMAIL(
         template = get_template('email/re_welcome_lamson_on.html')
 
         mail.send_mail(
-            subject_line = _('Re: Welcome to %(site_name)s') % data,
-            body_text = template.render(Context(data)),#todo: set lang
-            recipient_list = [from_address,]
+            subject_line=_('Re: Welcome to %(site_name)s') % data,
+            body_text=template.render(Context(data)),#todo: set lang
+            recipient=from_address
         )
     except ValueError:
         raise ValueError(
@@ -315,7 +315,7 @@ def PROCESS(
         template = get_template('email/re_welcome_lamson_on.html')
 
         mail.send_mail(
-            subject_line = _('Re: %s') % subject_line,
-            body_text = template.render(Context(data)),#todo: set lang
-            recipient_list = [from_address,]
+            subject_line=_('Re: %s') % subject_line,
+            body_text=template.render(Context(data)),#todo: set lang
+            recipient=from_address
         )

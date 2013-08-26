@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.utils.translation import ugettext as _
 from django.utils.translation import ugettext_lazy
 from django.conf import settings
+from django.contrib.sites.models import Site
 from askbot.models.base import BaseQuerySetManager
 from askbot import const
 from askbot.conf import settings as askbot_settings
@@ -290,6 +291,8 @@ class Tag(models.Model):
     deleted_at  = models.DateTimeField(null=True, blank=True)
     deleted_by  = models.ForeignKey(User, null=True, blank=True, related_name='deleted_tags')
 
+    sites = models.ManyToManyField(Site, related_name='askbot_tags')
+
     tag_wiki = models.OneToOneField(
                                 'Post',
                                 null=True,
@@ -305,6 +308,24 @@ class Tag(models.Model):
 
     def __unicode__(self):
         return self.name
+
+    def get_site_link(self):
+        """gets or creates link of this tag to the the current site"""
+        current_site = Site.objects.get_current()
+        link, created = TagToSite.objects.get_or_create(tag=self, site=current_site)
+        return link
+
+
+class TagToSite(models.Model):
+    """used only when askbot is used in the multi-portal mode
+    and when tags are isolated per-site"""
+    tag = models.ForeignKey(Tag, related_name='askbot_site_links')
+    site = models.ForeignKey(Site, related_name='askbot_tag_links')
+    used_count = models.IntegerField(default=0)
+
+    class Meta:
+        app_label = 'askbot'
+        unique_together = ('tag', 'site')
 
 class MarkedTag(models.Model):
     TAG_MARK_REASONS = (

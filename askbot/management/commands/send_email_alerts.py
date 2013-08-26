@@ -472,12 +472,12 @@ class Command(NoArgsCommand):
                 })
 
                 if DEBUG_THIS_COMMAND == True:
-                    recipient_email = askbot_settings.ADMIN_EMAIL
+                    recipient = askbot_settings.ADMIN_EMAIL
                 else:
-                    recipient_email = user.email
+                    recipient = user
 
                 mail.send_mail(
-                    subject_line = subject_line,
-                    body_text = text,
-                    recipient_list = [recipient_email]
+                    subject_line=subject_line,
+                    body_text=text,
+                    recipient=user
                 )

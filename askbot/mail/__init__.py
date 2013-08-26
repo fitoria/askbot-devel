@@ -100,14 +100,12 @@ def clean_html_email(email_body):
     return '\n\n'.join(phrases)
 
 def send_mail(
-            subject_line = None,
-            body_text = None,
-            from_email = django_settings.DEFAULT_FROM_EMAIL,
-            recipient_list = None,
-            activity_type = None,
-            related_object = None,
-            headers = None,
-            raise_on_failure = False,
+            subject_line=None,
+            body_text=None,
+            from_email=django_settings.DEFAULT_FROM_EMAIL,
+            recipient=None,
+            headers=None,
+            raise_on_failure=False,
         ):
     """
     todo: remove parameters not relevant to the function
@@ -116,13 +114,22 @@ def send_mail(
     and any errors are reported as critical
     in the main log file
 
-    related_object is not mandatory, other arguments
-    are. related_object (if given, will be saved in
-    the activity record)
-
     if raise_on_failure is True, exceptions.EmailNotSent is raised
     """
-    body_text = absolutize_urls(body_text)
+    from askbot import models
+    if isinstance(recipient, basestring):
+        base_url = askbot_settings.APP_URL
+        recipient_address = recipient
+    elif isinstance(recipient, models.User):
+        base_url = recipient.get_default_site_base_url()
+        recipient_address = recipient.email
+    else:
+        raise TypeError('unexpected type for "recipient" %s' % type(recipient))
+    #if recipient_list has plain text email addresses,
+    #then take base url from the default sites
+    #if recipient_list has instances of user object,
+
+    body_text = absolutize_urls(body_text, base_url)
     try:
         assert(subject_line is not None)
         subject_line = prefix_the_subject_line(subject_line)
@@ -130,14 +137,12 @@ def send_mail(
                         subject_line,
                         clean_html_email(body_text),
                         from_email,
-                        recipient_list,
+                        [recipient_address,],
                         headers = headers
                     )
         msg.attach_alternative(body_text, "text/html")
         msg.send()
-        logging.debug('sent update to %s' % ','.join(recipient_list))
-        if related_object is not None:
-            assert(activity_type is not None)
+        logging.debug('sent update to %s' % recipient_address)
     except Exception, error:
         sys.stderr.write('\n' + unicode(error).encode('utf-8') + '\n')
         if raise_on_failure == True:
@@ -151,7 +156,8 @@ def mail_moderators(
         ):
     """sends email to forum moderators and admins
     """
-    body_text = absolutize_urls(body_text)
+    base_url = askbot_settings.APP_URL
+    body_text = absolutize_urls(body_text, base_url)
     from django.db.models import Q
     from askbot.models import User
     recipient_list = User.objects.filter(
@@ -264,10 +270,10 @@ def bounce_email(
         headers['Reply-To'] = reply_to
 
     send_mail(
-        recipient_list = (email,),
-        subject_line = 'Re: ' + subject,
-        body_text = error_message,
-        headers = headers
+        recipient=email,
+        subject_line='Re: ' + subject,
+        body_text=error_message,
+        headers=headers
     )
 
 def extract_reply(text):

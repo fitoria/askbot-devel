@@ -116,12 +116,10 @@ def notify_author_of_published_revision_celery_task(revision):
         headers = {'Reply-To': append_content_address}
         #send the message
         mail.send_mail(
-            subject_line = _('Your post at %(site_name)s is now published') % data,
-            body_text = template.render(Context(data)),
-            recipient_list = [revision.author.email,],
-            related_object = revision,
-            activity_type = const.TYPE_ACTIVITY_EMAIL_UPDATE_SENT,
-            headers = headers
+            subject_line=_('Your post at %(site_name)s is now published') % data,
+            body_text=template.render(Context(data)),
+            recipient=revision.author,
+            headers=headers
         )
 
 @task(ignore_result = True)
@@ -263,9 +261,7 @@ def send_instant_notifications_about_activity_in_post(
             mail.send_mail(
                 subject_line=subject_line,
                 body_text=body_text,
-                recipient_list=[user.email],
-                related_object=origin_post,
-                activity_type=const.TYPE_ACTIVITY_EMAIL_UPDATE_SENT,
+                recipient=user,
                 headers=headers,
                 raise_on_failure=True
             )

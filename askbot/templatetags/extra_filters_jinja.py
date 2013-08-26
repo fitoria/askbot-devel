@@ -17,7 +17,6 @@ from askbot import exceptions as askbot_exceptions
 from askbot.conf import settings as askbot_settings
 from django.conf import settings as django_settings
 from askbot.skins import utils as skin_utils
-from askbot.utils.html import absolutize_urls
 from askbot.utils.html import site_url as site_url_func
 from askbot.utils import functions
 from askbot.utils import url_utils
@@ -28,8 +27,6 @@ from django_countries import countries
 from django_countries import settings as countries_settings
 
 register = coffin_template.Library()
-
-absolutize_urls = register.filter(absolutize_urls)
 
 TIMEZONE_STR = pytz.timezone(
                     django_settings.TIME_ZONE

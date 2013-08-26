@@ -1269,7 +1269,12 @@ def send_email_key(email, key, handler_url_name='user_account_recover'):
     }
     template = get_template('authopenid/email_validation.html')
     message = template.render(data)#todo: inject language preference
-    send_mail(subject, message, django_settings.DEFAULT_FROM_EMAIL, [email])
+    send_mail(
+        subject_line=subject,
+        body_text=message,
+        from_email=django_settings.DEFAULT_FROM_EMAIL,
+        recipient=email
+    )
 
 def send_user_new_email_key(user):
     user.email_key = generate_random_key()

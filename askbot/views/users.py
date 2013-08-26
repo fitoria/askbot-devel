@@ -207,6 +207,8 @@ def show_users(request, by_group=False, group_id=None, group_slug=None):
 @csrf.csrf_protect
 def user_moderate(request, subject, context):
     """user subview for moderation
+    A bit confusingly ``subject`` is actually user
+    which is being moderated
     """
     moderator = request.user
 
@@ -238,9 +240,9 @@ def user_moderate(request, subject, context):
 
                 try:
                     send_mail(
-                            subject_line = subject_line,
-                            body_text = body_text,
-                            recipient_list = [subject.email],
+                            subject_line=subject_line,
+                            body_text=body_text,
+                            recipient=subject,
                             headers={'Reply-to':moderator.email},
                             raise_on_failure = True
                         )
@@ -453,7 +455,13 @@ def user_stats(request, user, context):
     # INFO: There's bug in Django that makes the following query kind of broken (GROUP BY clause is problematic):
     #       http://stackoverflow.com/questions/7973461/django-aggregation-does-excessive-group-by-clauses
     #       Fortunately it looks like it returns correct results for the test data
-    user_tags = models.Tag.objects.filter(threads__posts__author=user).distinct().\
+    tag_isolation = getattr(django_settings, 'ASKBOT_TAG_ISOLATION', None)
+    tag_filter = {'threads__posts__author': user}
+    if tag_isolation == 'per-site':
+        current_site = Site.objects.get_current()
+        tag_filter['askbot_site_links__site'] = current_site
+
+    user_tags = models.Tag.objects.filter(**tag_filter).distinct().\
                     annotate(user_tag_usage_count=Count('threads')).\
                     order_by('-user_tag_usage_count')[:const.USER_VIEW_DATA_SIZE]
     user_tags = list(user_tags) # evaluate

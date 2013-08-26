@@ -2166,9 +2166,9 @@ class PostRevision(models.Model):
                     'It will be published after the moderators review.'
                 ) % email_context
                 send_mail(
-                    subject_line = _('your post to %(site)s') % email_context,
-                    body_text = body_text,
-                    recipient_list = [self.author.email,],
+                    subject_line=_('your post to %(site)s') % email_context,
+                    body_text=body_text,
+                    recipient=self.author
                 )
 
             else:

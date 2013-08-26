@@ -46,15 +46,16 @@ class HTMLSanitizer(tokenizer.HTMLTokenizer, HTMLSanitizerMixin):
             if token:
                 yield token
 
-def absolutize_urls(html):
+def absolutize_urls(html, base_url):
     """turns relative urls in <img> and <a> tags to absolute,
     starting with the ``askbot_settings.APP_URL``"""
+    if base_url.endswith('/'):
+        base_url = base_url[:-1]
     #temporal fix for bad regex with wysiwyg editor
     url_re1 = re.compile(r'(?P<prefix><img[^<]+src=)"(?P<url>/[^"]+)"', re.I)
     url_re2 = re.compile(r"(?P<prefix><img[^<]+src=)'(?P<url>/[^']+)'", re.I)
     url_re3 = re.compile(r'(?P<prefix><a[^<]+href=)"(?P<url>/[^"]+)"', re.I)
     url_re4 = re.compile(r"(?P<prefix><a[^<]+href=)'(?P<url>/[^']+)'", re.I)
-    base_url = site_url('')#important to have this without the slash
     img_replacement = '\g<prefix>"%s/\g<url>" style="max-width:500px;"' % base_url
     replacement = '\g<prefix>"%s\g<url>"' % base_url
     html = url_re1.sub(img_replacement, html)

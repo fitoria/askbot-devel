@@ -9,12 +9,17 @@
         <ul class='tags'>
             {% for tag in tags.object_list %}
             <li>
+                {% if tag_isolation == 'per-site' %}
+                    {% set used_count = tag.get_site_link().used_count %}
+                {% else %}
+                    {% set used_count = tag.used_count %}
+                {% endif %}
                 {{ macros.tag_widget(
                             tag=tag.name,
                             html_tag='div',
                             truncate_long_tag=True,
                             extra_content='<span class="tag-number">&#215; ' ~
-                                            tag.used_count|intcomma ~ '</span>'
+                                            used_count|intcomma ~ '</span>'
                     )
                 }}
             </li>

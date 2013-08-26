@@ -29,6 +29,7 @@ from django.utils.html import escape
 from django.db import models
 from django.conf import settings as django_settings
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.sites.models import Site
 from django.core import cache
 from django.core import exceptions as django_exceptions
 from django_countries.fields import CountryField
@@ -38,6 +39,7 @@ from askbot.const.message_keys import get_i18n_message
 from askbot.conf import settings as askbot_settings
 from askbot.models.spaces import Space, Feed, get_feed_url
 from askbot.models.spaces import FeedToSpace
+#from askbot.models.spaces import AskbotSite
 from askbot.models.question import Thread
 from askbot.skins import utils as skin_utils
 from askbot.mail import messages
@@ -45,10 +47,12 @@ from askbot.models.question import QuestionView, AnonymousQuestion
 from askbot.models.question import DraftQuestion
 from askbot.models.question import FavoriteQuestion
 from askbot.models.tag import Tag, MarkedTag, TagSynonym
+from askbot.models.tag import TagToSite
 from askbot.models.tag import format_personal_group_name
 from askbot.models.user import EmailFeedSetting, ActivityAuditStatus, Activity
 from askbot.models.user import GroupMembership
 from askbot.models.user import Group
+from askbot.models.user import UserProfile
 from askbot.models.user import BulkTagSubscription
 from askbot.models.post import Post, PostRevision
 from askbot.models.post import PostFlagReason, AnonymousAnswer
@@ -2430,6 +2434,21 @@ def get_profile_link(self):
 
     return mark_safe(profile_link)
 
+def user_get_default_site(self):
+    profile = self.askbot_profile
+    return profile.default_site
+
+def user_get_default_site_base_url(self):
+    """returns base url to the primary site of the user"""
+    if getattr(django_settings, 'ASKBOT_SITE_IDS', None):
+        #if we have multi site setup - we return url for the
+        #default site of this user
+        site = self.get_default_site()
+        return 'http://' + site.domain + '/'
+        #return site.get_absolute_url()
+    else:
+        return askbot_settings.APP_URL
+
 def user_get_groups(self, private=False):
     """returns a query set of groups to which user belongs"""
     #todo: maybe cache this query
@@ -3010,6 +3029,8 @@ User.add_to_class(
 User.add_to_class('get_flags_for_post', user_get_flags_for_post)
 User.add_to_class('get_profile_url', user_get_profile_url)
 User.add_to_class('get_profile_link', get_profile_link)
+User.add_to_class('get_default_site', user_get_default_site)
+User.add_to_class('get_default_site_base_url', user_get_default_site_base_url)
 User.add_to_class('get_tag_filtered_questions', user_get_tag_filtered_questions)
 User.add_to_class('get_messages', get_messages)
 User.add_to_class('delete_messages', delete_messages)
@@ -3183,8 +3204,8 @@ def format_instant_notification_email(
     else:
         raise ValueError('unrecognized post type')
 
-    post_url = site_url(post.get_absolute_url())
-    user_url = site_url(from_user.get_absolute_url())
+    post_url = post.get_absolute_url()
+    user_url = from_user.get_absolute_url()
     user_action = user_action % {
         'user': '<a href="%s">%s</a>' % (user_url, from_user.username),
         'post_link': '<a href="%s">%s</a>' % (post_url, _(post.post_type))
@@ -3232,7 +3253,7 @@ def format_instant_notification_email(
         'update_type': update_type,
         'post_url': post_url,
         'origin_post_title': origin_post.thread.title,
-        'user_subscriptions_url': site_url(user_subscriptions_url),
+        'user_subscriptions_url': user_subscriptions_url,
         'reply_separator': reply_separator,
         'reply_address': reply_address,
         'is_multilingual': getattr(django_settings, 'ASKBOT_MULTILINGUAL', False)
@@ -3602,11 +3623,10 @@ def send_respondable_email_validation_message(
                         )
 
     mail.send_mail(
-        subject_line = subject_line,
-        body_text = body_text,
-        recipient_list = [user.email, ],
-        activity_type = const.TYPE_ACTIVITY_VALIDATION_EMAIL_SENT,
-        headers = {'Reply-To': reply_to_address}
+        subject_line=subject_line,
+        body_text=body_text,
+        recipient=user,
+        headers={'Reply-To': reply_to_address}
     )
 
 
@@ -3667,6 +3687,14 @@ def greet_new_user(user, **kwargs):
         data=data,
         template_name=template_name
     )
+
+
+def init_askbot_user_profile(user, **kwargs):
+    """adds default site record to the askbot user profile"""
+    user.askbot_profile = UserProfile()
+    user.askbot_profile.default_site = Site.objects.get_current()
+    user.askbot_profile.save()
+    user.save()
 
 
 def complete_pending_tag_subscriptions(sender, request, *args, **kwargs):
@@ -3786,6 +3814,7 @@ signals.delete_question_or_answer.connect(record_delete_question, sender=Post)
 signals.flag_offensive.connect(record_flag_offensive, sender=Post)
 signals.remove_flag_offensive.connect(remove_flag_offensive, sender=Post)
 signals.tags_updated.connect(record_update_tags)
+signals.user_registered.connect(init_askbot_user_profile)
 signals.user_registered.connect(greet_new_user)
 signals.user_updated.connect(record_user_full_updated, sender=User)
 signals.user_logged_in.connect(complete_pending_tag_subscriptions)#todo: add this to fake onlogin middleware
@@ -3821,6 +3850,7 @@ __all__ = [
         'PostFlagReason',
         'MarkedTag',
         'TagSynonym',
+        'TagToSite',
 
         'BadgeData',
         'Award',

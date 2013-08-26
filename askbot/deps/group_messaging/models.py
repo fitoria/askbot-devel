@@ -395,10 +395,10 @@ class Message(models.Model):
             #in the template we have a placeholder to be replaced like this:
             body_text = body_text.replace('THREAD_URL_HOLE', thread_url)
             send_mail(
-                subject,
-                body_text,
-                django_settings.DEFAULT_FROM_EMAIL,
-                [user.email,],
+                subject_line=subject,
+                body_text=body_text,
+                from_email=django_settings.DEFAULT_FROM_EMAIL,
+                recipient=user,
             )
 
 

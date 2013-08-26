@@ -7,6 +7,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.contrib.auth.models import User
 from django.contrib.auth.models import Group as AuthGroup
+from django.contrib.sites.models import Site
 from django.core import exceptions
 from django.forms import EmailField, URLField
 from django.utils.translation import ugettext as _
@@ -19,6 +20,7 @@ from askbot.models.base import BaseQuerySetManager
 from askbot.models.tag import Tag
 from askbot.models.tag import clean_group_name#todo - delete this
 from askbot.models.tag import get_tags_by_names
+#from askbot.models.spaces import AskbotSite
 from askbot.forms import DomainNameField
 from askbot.utils.forms import email_is_allowed
 from collections import defaultdict
@@ -699,3 +701,10 @@ class BulkTagSubscription(models.Model):
     class Meta:
         app_label = 'askbot'
         ordering = ['-date_added']
+
+class UserProfile(models.Model):
+    auth_user = models.OneToOneField(User, related_name='askbot_profile')
+    default_site = models.ForeignKey(Site)
+
+    class Meta:
+        app_label = 'askbot'

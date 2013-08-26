@@ -286,31 +286,43 @@ def tags(request):#view showing a listing of available tags - plain list
     except ValueError:
         page = 1
 
-    if sortby == 'name':
-        order_by = 'name'
-    else:
-        order_by = '-used_count'
+    tag_isolation = getattr(django_settings, 'ASKBOT_TAG_ISOLATION', None)
 
     query = post_data.get('query', '').strip()
-    tag_list_type = askbot_settings.TAG_LIST_FORMAT
 
     #2) Get query set for the tags.
-    query_params = {'deleted': False}
+    query_params = dict()
     if query != '':
         query_params['name__icontains'] = query
 
-    tags_qs = Tag.objects.filter(**query_params).exclude(used_count=0)
+    if tag_isolation == 'per-site':
+        query_params['askbot_site_links__site'] = get_current_site(request)
+        #query_params['askbot_site_links__used_count__gt'] = 0
+    else:
+        query_params['used_count__gt'] = 0
+
+    tags_qs = Tag.objects.filter(**query_params)
+
+    if sortby == 'name':
+        order_by = 'name'
+    else:
+        if tag_isolation == 'per-site':
+            order_by = '-askbot_site_links__used_count'
+        else:
+            order_by = '-used_count'
 
     tags_qs = tags_qs.order_by(order_by)
 
     #3) Start populating the template context.
+    tag_list_type = askbot_settings.TAG_LIST_FORMAT
     data = {
         'active_tab': 'tags',
         'page_class': 'tags-page',
         'tag_list_type' : tag_list_type,
         'stag' : query,
         'tab_id' : sortby,
-        'keywords' : query
+        'keywords' : query,
+        'tag_isolation': tag_isolation
     }
 
     if tag_list_type == 'list':

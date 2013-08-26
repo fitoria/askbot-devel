@@ -13,6 +13,7 @@ from django.core import exceptions
 #from django.core.management import call_command
 from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import login_required
+from django.contrib.sites.models import Site
 from django.http import Http404
 from django.http import HttpResponse
 from django.http import HttpResponseBadRequest
@@ -120,9 +121,9 @@ def manage_inbox(request):
                                    }
                             body_text = template.render(RequestContext(request, data))
                             mail.send_mail(
-                                subject_line = _('your post was not accepted'),
-                                body_text = unicode(body_text),
-                                recipient_list = [post.author.email,]
+                                subject_line=_('your post was not accepted'),
+                                body_text=unicode(body_text),
+                                recipient=post.author,
                             )
                             memo.delete()
 
@@ -544,14 +545,16 @@ def get_tag_list(request):
     """returns tags to use in the autocomplete
     function
     """
-    tags = models.Tag.objects.filter(
-                        deleted = False,
-                        status = models.Tag.STATUS_ACCEPTED
-                    )
+    tag_filter = {
+        'deleted': False,
+        'status': models.Tag.STATUS_ACCEPTED
+    }
+    tag_isolation = getattr(django_settings, 'ASKBOT_TAG_ISOLATION', None)
+    if tag_isolation == 'per-site':
+        tag_filter['askbot_site_links__site'] = Site.objects.get_current()
 
-    tag_names = tags.values_list(
-                        'name', flat = True
-                    )
+    tags = models.Tag.objects.filter(**tag_filter)
+    tag_names = tags.values_list('name', flat=True)
 
     output = '\n'.join(map(escape, tag_names))
     return HttpResponse(output, mimetype = 'text/plain')
