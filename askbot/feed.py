@@ -20,16 +20,34 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext as _
 from django.core.exceptions import ObjectDoesNotExist
-from django.utils.html import strip_tags
 from django.http import Http404
+from django.utils.html import strip_tags
+from django.utils import feedgenerator
 
 from askbot.conf import settings as askbot_settings
 from askbot.models import Post
 from askbot.utils.html import site_url
 
+
+class AskbotRSSFeed(feedgenerator.Rss201rev2Feed):
+    '''
+    Feed that can have content:encoded elements.
+    based on: https://code.djangoproject.com/ticket/15936
+    '''
+    def root_attributes(self):
+        attrs = super(AskbotRSSFeed, self).root_attributes()
+        attrs['xmlns:content'] = 'http://purl.org/rss/1.0/modules/content/'
+        return attrs
+
+    def add_item_elements(self, handler, item):
+        super(AskbotRSSFeed, self).add_item_elements(handler, item)
+        handler.addQuickElement(u'content:encoded', item['content_encoded'])
+
 class RssIndividualQuestionFeed(Feed):
     """rss feed class for particular questions
     """
+
+    feed_type = AskbotRSSFeed
 
     def title(self):
         return askbot_settings.APP_TITLE + _(' - ') + \
@@ -100,10 +118,14 @@ class RssIndividualQuestionFeed(Feed):
         """
         return strip_tags(item.text)
 
+    def item_extra_kwargs(self, item):
+        return {'content_encoded': item.text}
+
 
 class RssLastestQuestionsFeed(Feed):
     """rss feed class for the latest questions
     """
+    feed_type = AskbotRSSFeed
 
     def title(self):
         return askbot_settings.APP_TITLE + _(' - ') + \
@@ -145,7 +167,7 @@ class RssLastestQuestionsFeed(Feed):
         return site_url(item.get_absolute_url(no_slug = True))
 
     def item_title(self, item):
-        return strip_tags(item)
+        return strip_tags(item.thread.title)
 
     def item_description(self, item):
         """returns the description for the item
@@ -176,6 +198,9 @@ class RssLastestQuestionsFeed(Feed):
                 qs = qs.filter(thread__tags__name = tag)
 
         return qs.order_by('-thread__last_activity_at')[:30]
+
+    def item_extra_kwargs(self, item):
+        return {'content_encoded': item.text}
 
     #hack to get the request object into the Feed class
     def get_feed(self, obj, request):
