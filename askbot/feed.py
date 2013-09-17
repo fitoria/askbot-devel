@@ -167,7 +167,7 @@ class RssLastestQuestionsFeed(Feed):
         return site_url(item.get_absolute_url(no_slug = True))
 
     def item_title(self, item):
-        return strip_tags(item.thread.title)
+        return strip_tags(item)
 
     def item_description(self, item):
         """returns the description for the item
